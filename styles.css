@@ -872,6 +872,8 @@ body {
 .workspace-layout {
   grid-template-columns: 286px minmax(0, 1fr);
   gap: 14px;
+  position: relative;
+  --filters-width: 286px;
 }
 
 .filter-panel,
@@ -887,6 +889,43 @@ body {
 .filter-panel {
   border-radius: 18px;
   padding: 12px;
+  transition: transform .2s ease, opacity .2s ease;
+}
+
+.filter-collapse-btn {
+  position: absolute;
+  top: 18px;
+  left: calc(var(--filters-width) - 14px);
+  z-index: 40;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: rgba(255,255,255,.96);
+  color: var(--green);
+  font: 900 12px/1 "Aptos", "Segoe UI", sans-serif;
+  box-shadow: 0 10px 24px rgba(31,42,46,.10);
+  cursor: pointer;
+  transition: left .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.filter-collapse-btn:hover {
+  transform: translateX(1px);
+  box-shadow: 0 12px 28px rgba(31,42,46,.14);
+}
+
+body.filters-collapsed .workspace-layout {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+body.filters-collapsed .filter-panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-24px);
+}
+
+body.filters-collapsed .filter-collapse-btn {
+  left: 0;
 }
 
 .filter-title { margin-bottom: 8px; }
@@ -1097,6 +1136,10 @@ body {
 .focus-gantt .workspace-layout {
   display: block;
 }
+
+.focus-gantt .filter-collapse-btn {
+  display: none;
+}
 .focus-gantt .panel {
   border-radius: 14px;
 }
@@ -1128,6 +1171,7 @@ body {
 }
 
 @media (max-width: 760px) {
+  .filter-collapse-btn { display: none; }
   :root { --left: 290px; }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero { grid-template-columns: 1fr; }
@@ -2013,6 +2057,9 @@ button:not(.ghost-btn) {
 
 .gantt-grid-row {
   grid-template-columns: var(--left) var(--timeline-width) !important;
+  width: var(--board-width);
+  min-width: var(--board-width);
+  box-sizing: border-box;
 }
 
 
@@ -2092,6 +2139,28 @@ button:not(.ghost-btn) {
   width: 100%;
   overflow: auto;
   overscroll-behavior: auto;
+}
+
+.project-header,
+.project-body,
+.project-group > summary,
+.gantt-subgroup > summary,
+.project-task-row,
+.project-task-list,
+.gantt-group,
+.gantt-subgroup {
+  width: var(--board-width);
+  min-width: var(--board-width);
+  box-sizing: border-box;
+}
+
+.project-timeline-head,
+.project-group-lane,
+.project-subgroup-lane,
+.project-lane {
+  width: var(--timeline-width) !important;
+  min-width: var(--timeline-width);
+  box-sizing: border-box;
 }
 
 .project-header,
@@ -2521,7 +2590,7 @@ button:not(.ghost-btn) {
 /* Hover date indicator - appears on top when hovering */
 .hover-date-indicator {
   position: absolute;
-  top: 30px;
+  top: 2px;
   height: 32px;
   display: flex;
   align-items: center;
@@ -2529,12 +2598,14 @@ button:not(.ghost-btn) {
   background: #4a90d9;
   border-radius: 6px;
   color: #fff;
-  font: 900 12px/1 "Aptos", "Segoe UI", sans-serif;
+  font: 900 11px/1 "Aptos", "Segoe UI", sans-serif;
   z-index: 50;
   pointer-events: none;
-  min-width: 20px;
+  min-width: 72px;
+  padding: 0 8px;
   box-shadow: 0 2px 8px rgba(74, 144, 217, .35);
   transition: left .05s ease;
+  transform: translateX(-50%);
 }
 
 /* Column highlight on hover */

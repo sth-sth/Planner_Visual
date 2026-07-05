@@ -34,7 +34,7 @@
     </section>
 
     <section class="workspace-layout">
-      <aside class="filter-panel" aria-label="篩選控制">
+      <aside id="filterPanel" class="filter-panel" aria-label="篩選控制">
         <div class="filter-title">
           <div>
             <span data-i18n="commandLabel">Command</span>
@@ -109,6 +109,8 @@
 
         <button id="csvBtn" type="button" class="export-btn" data-i18n="exportBtn">匯出當前 CSV</button>
       </aside>
+
+      <button id="filterCollapseBtn" type="button" class="filter-collapse-btn" aria-controls="filterPanel" aria-expanded="true">收起篩選</button>
 
       <section class="main-workspace">
         <section class="stats" aria-label="專案指標">

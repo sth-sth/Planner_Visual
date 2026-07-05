@@ -6,6 +6,7 @@ const state = {
   filtered: [],
   context: { buckets: new Map(), users: new Map(), goals: new Map(), planName: "" },
   ganttCols: { task: 286, owner: 128, start: 84, finish: 84 },
+  filtersCollapsed: false,
   lang: "zh"
 };
 
@@ -19,6 +20,8 @@ const i18n = {
     uploadHint: "支援 Planner 預設多工作表匯出",
     noticeDefault: "請上傳 Microsoft Planner 匯出的 Excel。建議保留 Tasks、Buckets、Users 和 Consolidated Data 工作表。",
     commandLabel: "Command", filterTitle: "篩選與視圖", resetBtn: "重置",
+    filterCollapse: "收起篩選",
+    filterExpand: "展開篩選",
     sectionFileTime: "檔案與時間",
     labelSheet: "任務資料來源", sheetPlaceholder: "等待上傳",
     sheetHint: "優先讀取 Consolidated Data；選擇 Tasks 時會自動用 Buckets / Users 映射名稱。",
@@ -77,6 +80,7 @@ const i18n = {
     ganttResizeHint: "拖動左側表頭分隔線可像 Excel 一樣調整列寬",
     noDueGanttNote: "個無 Due Date：保留在左側任務表，不畫時間條",
     noStartNote: "個無開始日期：按截止日定位",
+    todayLabel: "今天",
     statusCompleted: "已完成", statusOverdue: "逾期", statusDueSoon: "即將到期",
     statusInProgress: "進行中", statusNotStarted: "未開始", statusUnknown: "未知",
     langToggle: "EN",
@@ -90,6 +94,8 @@ const i18n = {
     uploadHint: "Supports Planner default multi-sheet export",
     noticeDefault: "Please upload a Microsoft Planner exported Excel. Keep Tasks, Buckets, Users, and Consolidated Data sheets.",
     commandLabel: "Command", filterTitle: "Filters & Views", resetBtn: "Reset",
+    filterCollapse: "Hide Filters",
+    filterExpand: "Show Filters",
     sectionFileTime: "File & Time",
     labelSheet: "Task Data Source", sheetPlaceholder: "Awaiting upload",
     sheetHint: "Prefers Consolidated Data; choosing Tasks auto-maps via Buckets / Users.",
@@ -150,6 +156,7 @@ const i18n = {
     ganttResizeHint: "Drag header dividers to resize columns like Excel",
     noDueGanttNote: "no Due Date: listed but no bar",
     noStartNote: "no start date: positioned by due date",
+    todayLabel: "Today",
     statusCompleted: "Completed", statusOverdue: "Overdue", statusDueSoon: "Due Soon",
     statusInProgress: "In Progress", statusNotStarted: "Not Started", statusUnknown: "Unknown",
     langToggle: "中文",
@@ -192,7 +199,8 @@ function cacheElements() {
     "notice", "totalTasks", "completionRate", "completedNote", "overdueTasks",
     "noDueTasks", "searchInput", "ganttMeta", "bucketCount", "assigneeCount", "statusCount",
     "ganttChart", "healthPanel", "workloadPanel", "bucketPanel", "riskPanel",
-    "expandAllBtn", "collapseAllBtn", "focusModeBtn", "densityBtn", "tableCount", "langBtn"
+    "expandAllBtn", "collapseAllBtn", "focusModeBtn", "densityBtn", "tableCount", "langBtn",
+    "filterCollapseBtn"
   ].forEach(id => { els[id] = document.getElementById(id); });
 }
 
@@ -210,6 +218,7 @@ function bindEvents() {
   els.focusModeBtn.addEventListener("click", toggleFocusMode);
   els.densityBtn.addEventListener("click", toggleGanttDensity);
   if (els.langBtn) els.langBtn.addEventListener("click", toggleLang);
+  if (els.filterCollapseBtn) els.filterCollapseBtn.addEventListener("click", toggleFilterPanel);
 
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -246,6 +255,7 @@ function applyLangToUI() {
   if (!state.tasks.length) {
     setNotice(t("noticeDefault"));
   }
+  syncFilterPanelToggle();
 }
 
 async function handleFile(event) {
@@ -669,6 +679,22 @@ function renderAll() {
   renderTable();
 }
 
+function toggleFilterPanel() {
+  state.filtersCollapsed = !state.filtersCollapsed;
+  document.body.classList.toggle("filters-collapsed", state.filtersCollapsed);
+  syncFilterPanelToggle();
+  if (state.filtered.length) renderGantt({ viewport: captureGanttViewport() });
+}
+
+function syncFilterPanelToggle() {
+  if (!els.filterCollapseBtn) return;
+  const collapsed = state.filtersCollapsed;
+  const label = collapsed ? t("filterExpand") : t("filterCollapse");
+  els.filterCollapseBtn.textContent = label;
+  els.filterCollapseBtn.setAttribute("aria-expanded", String(!collapsed));
+  els.filterCollapseBtn.setAttribute("aria-label", label);
+}
+
 function updateStats() {
   const tasks = state.filtered;
   const total = tasks.length;
@@ -701,12 +727,13 @@ function clearVisuals() {
   if (els.tableCount) els.tableCount.textContent = t("taskCount").replace("{n}", "0");
 }
 
-function renderGantt() {
+function renderGantt(options = {}) {
   const tasks = state.filtered.slice().sort(compareForGantt);
   const scheduled = tasks.filter(t => t.viewDueDate && t.viewGanttStart && t.viewGanttEnd);
   const noDue = tasks.filter(t => !t.viewDueDate).length;
   const noStart = tasks.filter(t => t.viewDueDate && !t.viewGanttStart).length;
   const el = els.ganttChart;
+  const viewport = options.viewport || captureGanttViewport();
 
   if (!tasks.length) {
     if (els.ganttMeta) els.ganttMeta.textContent = t("emptyFilter");
@@ -747,7 +774,7 @@ function renderGantt() {
     return `<div class="day-cell ${tick.isToday ? "is-today" : ""}" style="left:${left}px;width:${width}px" data-date="${tick.fullDate}"><span>${tick.day}</span></div>`;
   }).join("");
   const todayHtml = today >= timelineStart && today <= timelineEnd
-    ? `<div class="today-line project-style" style="left:${todayLeft}px"><span>Today</span></div>`
+    ? `<div class="today-line project-style" style="left:${todayLeft}px"><span>${escapeHtml(t("todayLabel"))}</span></div>`
     : "";
 
   const groups = groupTasks(tasks, task => getGroupLabel(task, groupField));
@@ -838,6 +865,7 @@ function renderGantt() {
   `;
   bindGanttColumnResizers();
   bindGanttScrollControls();
+  restoreGanttViewport(viewport, { timelineStart, timelineEnd, pxPerDay, timelineWidth, leftWidth });
 }
 
 function renderGroupRangeBar(rows, timelineStart, totalDays, pxPerDay) {
@@ -875,7 +903,7 @@ function renderGanttRow(task, timelineStart, totalDays, pxPerDay, timelineWidth,
       `${state.lang === "zh" ? "時長" : "Duration"}：${duration} ${state.lang === "zh" ? "天" : "days"}`
     ].join("\n");
     laneContent = `
-      <div class="project-task-bar ${dueClass}" title="${escapeAttr(tooltip)}" style="left:${left}px;width:${width}px;background:${color}">
+      <div class="project-task-bar ${dueClass}" title="${escapeAttr(tooltip)}" data-bar-left="${left}" data-bar-width="${width}" style="left:${left}px;width:${width}px;background:${color}">
         <span>${duration}d</span>
       </div>
     `;
@@ -997,7 +1025,8 @@ function ganttColumnStyle(timelineWidth = 900) {
   return [
     `--task-col:${c.task}px`, `--owner-col:${c.owner}px`,
     `--start-col:${c.start}px`, `--finish-col:${c.finish}px`,
-    `--left:${totalGanttLeftWidth()}px`, `--timeline-width:${timelineWidth}px`
+    `--left:${totalGanttLeftWidth()}px`, `--timeline-width:${timelineWidth}px`,
+    `--board-width:${totalGanttLeftWidth() + timelineWidth}px`
   ].join(";");
 }
 
@@ -1032,12 +1061,56 @@ function bindGanttColumnResizers() {
         document.body.classList.remove("resizing-gantt-col");
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
-        renderGantt();
+        renderGantt({ viewport: captureGanttViewport({ keepTimelineOrigin: true }) });
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp, { once: true });
     });
   });
+}
+
+function captureGanttViewport(options = {}) {
+  const scroller = els.ganttChart?.querySelector(".project-scroll");
+  if (!scroller) return null;
+  return {
+    scrollLeft: scroller.scrollLeft,
+    scrollTop: scroller.scrollTop,
+    leftWidth: totalGanttLeftWidth(),
+    keepTimelineOrigin: Boolean(options.keepTimelineOrigin)
+  };
+}
+
+function restoreGanttViewport(viewport, context) {
+  const scroller = els.ganttChart?.querySelector(".project-scroll");
+  if (!scroller) return;
+
+  const { timelineStart, timelineEnd, pxPerDay, leftWidth } = context;
+  const maxScrollLeft = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+  const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+
+  if (!viewport) {
+    alignGanttToToday({ timelineStart, timelineEnd, pxPerDay, leftWidth, scroller });
+    return;
+  }
+
+  const nextLeft = viewport.keepTimelineOrigin
+    ? viewport.scrollLeft + (leftWidth - viewport.leftWidth)
+    : viewport.scrollLeft;
+
+  scroller.scrollLeft = clamp(nextLeft, 0, maxScrollLeft);
+  scroller.scrollTop = clamp(viewport.scrollTop, 0, maxScrollTop);
+}
+
+function alignGanttToToday({ timelineStart, timelineEnd, pxPerDay, leftWidth, scroller }) {
+  const today = getProjectToday();
+  if (!(today >= timelineStart && today <= timelineEnd)) {
+    scroller.scrollLeft = clamp(leftWidth, 0, Math.max(0, scroller.scrollWidth - scroller.clientWidth));
+    return;
+  }
+  const todayLeft = dayDiff(timelineStart, today) * pxPerDay;
+  const visibleTimelineWidth = Math.max(0, scroller.clientWidth - leftWidth);
+  const targetLeft = leftWidth + todayLeft - Math.round(visibleTimelineWidth * 0.35);
+  scroller.scrollLeft = clamp(targetLeft, 0, Math.max(0, scroller.scrollWidth - scroller.clientWidth));
 }
 
 function bindGanttScrollControls() {
@@ -1053,10 +1126,8 @@ function bindGanttScrollControls() {
     }
   }, { passive: false });
 
-  // Hover date indicator on the timeline body
-  const ganttBoard = els.ganttChart?.querySelector(".project-gantt");
   const timelineHead = els.ganttChart?.querySelector(".project-timeline-head");
-  if (!ganttBoard || !timelineHead) return;
+  if (!timelineHead) return;
 
   const pxPerDay = parseFloat(timelineHead.dataset.pxPerDay) || 10;
   const timelineStartStr = timelineHead.dataset.timelineStart;
@@ -1076,13 +1147,17 @@ function bindGanttScrollControls() {
 
   const leftWidth = totalGanttLeftWidth();
 
+  const hideHover = () => {
+    if (indicator) indicator.style.display = "none";
+    if (colHighlight) colHighlight.style.display = "none";
+  };
+
   const handleMove = (e) => {
     const scrollerRect = scroller.getBoundingClientRect();
     const xInScroller = e.clientX - scrollerRect.left + scroller.scrollLeft;
     const xInTimeline = xInScroller - leftWidth;
     if (xInTimeline < 0) {
-      if (indicator) indicator.style.display = "none";
-      if (colHighlight) colHighlight.style.display = "none";
+      hideHover();
       return;
     }
     const dayOffset = Math.floor(xInTimeline / pxPerDay);
@@ -1091,9 +1166,9 @@ function bindGanttScrollControls() {
 
     if (indicator) {
       indicator.style.display = "flex";
-      indicator.style.left = `${dayLeft}px`;
+      indicator.style.left = `${dayLeft + Math.max(pxPerDay / 2, 12)}px`;
       indicator.style.width = `${pxPerDay}px`;
-      indicator.textContent = hoverDate.getDate();
+      indicator.textContent = formatDate(hoverDate);
     }
     if (colHighlight) {
       colHighlight.style.display = "block";
@@ -1102,13 +1177,12 @@ function bindGanttScrollControls() {
     }
   };
 
-  const handleLeave = () => {
-    if (indicator) indicator.style.display = "none";
-    if (colHighlight) colHighlight.style.display = "none";
-  };
-
-  scroller.addEventListener("mousemove", handleMove);
-  scroller.addEventListener("mouseleave", handleLeave);
+  els.ganttChart.querySelectorAll(".project-task-bar").forEach(bar => {
+    bar.addEventListener("mousemove", handleMove);
+    bar.addEventListener("mouseleave", hideHover);
+  });
+  scroller.addEventListener("scroll", hideHover, { passive: true });
+  scroller.addEventListener("mouseleave", hideHover);
 }
 
 function toggleFocusMode() {
