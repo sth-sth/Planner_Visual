@@ -20,8 +20,8 @@ const i18n = {
     uploadHint: "支援 Planner 預設多工作表匯出",
     noticeDefault: "請上傳 Microsoft Planner 匯出的 Excel。建議保留 Tasks、Buckets、Users 和 Consolidated Data 工作表。",
     commandLabel: "Command", filterTitle: "篩選與視圖", resetBtn: "重置",
-    filterCollapse: "收起篩選",
-    filterExpand: "展開篩選",
+    filterCollapse: "收起",
+    filterExpand: "展開",
     sectionFileTime: "檔案與時間",
     labelSheet: "任務資料來源", sheetPlaceholder: "等待上傳",
     sheetHint: "優先讀取 Consolidated Data；選擇 Tasks 時會自動用 Buckets / Users 映射名稱。",
@@ -94,8 +94,8 @@ const i18n = {
     uploadHint: "Supports Planner default multi-sheet export",
     noticeDefault: "Please upload a Microsoft Planner exported Excel. Keep Tasks, Buckets, Users, and Consolidated Data sheets.",
     commandLabel: "Command", filterTitle: "Filters & Views", resetBtn: "Reset",
-    filterCollapse: "Hide Filters",
-    filterExpand: "Show Filters",
+    filterCollapse: "Hide",
+    filterExpand: "Show",
     sectionFileTime: "File & Time",
     labelSheet: "Task Data Source", sheetPlaceholder: "Awaiting upload",
     sheetHint: "Prefers Consolidated Data; choosing Tasks auto-maps via Buckets / Users.",
@@ -1136,6 +1136,7 @@ function bindGanttScrollControls() {
 
   const indicator = timelineHead.querySelector(".hover-date-indicator");
   const body = els.ganttChart.querySelector(".project-body");
+  const timelineWidth = parseFloat(els.ganttChart.querySelector(".project-gantt")?.dataset.timelineWidth || "0") || 0;
 
   // Column highlight that spans the full body
   let colHighlight = els.ganttChart.querySelector(".gantt-col-highlight");
@@ -1161,13 +1162,15 @@ function bindGanttScrollControls() {
       return;
     }
     const dayOffset = Math.floor(xInTimeline / pxPerDay);
+    const maxDayOffset = Math.max(0, Math.floor(Math.max(timelineWidth - 1, 0) / pxPerDay));
+    const safeDayOffset = clamp(dayOffset, 0, maxDayOffset);
+    const hoverCenter = clamp((safeDayOffset * pxPerDay) + (pxPerDay / 2), 40, Math.max(40, timelineWidth - 40));
     const hoverDate = addDays(timelineStartDate, dayOffset);
-    const dayLeft = dayOffset * pxPerDay;
+    const dayLeft = safeDayOffset * pxPerDay;
 
     if (indicator) {
       indicator.style.display = "flex";
-      indicator.style.left = `${dayLeft + Math.max(pxPerDay / 2, 12)}px`;
-      indicator.style.width = `${pxPerDay}px`;
+      indicator.style.left = `${hoverCenter}px`;
       indicator.textContent = formatDate(hoverDate);
     }
     if (colHighlight) {
@@ -1177,10 +1180,12 @@ function bindGanttScrollControls() {
     }
   };
 
-  els.ganttChart.querySelectorAll(".project-task-bar").forEach(bar => {
-    bar.addEventListener("mousemove", handleMove);
-    bar.addEventListener("mouseleave", hideHover);
+  const hoverSurfaces = [timelineHead, body].filter(Boolean);
+  hoverSurfaces.forEach(surface => {
+    surface.addEventListener("mousemove", handleMove);
+    surface.addEventListener("mouseleave", hideHover);
   });
+
   scroller.addEventListener("scroll", hideHover, { passive: true });
   scroller.addEventListener("mouseleave", hideHover);
 }
