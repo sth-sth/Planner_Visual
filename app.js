@@ -1519,7 +1519,7 @@ function bindTaskTooltips() {
   const rows = els.ganttChart?.querySelectorAll(".project-task-row[data-task-key]");
   if (!rows?.length) return;
   const tooltip = ensureTaskTooltip();
-  const hoverDelay = 1200;
+  const hoverDelay = 600;
   let pendingPoint = null;
 
   const clearPendingShow = () => {
