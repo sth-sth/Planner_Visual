@@ -1519,29 +1519,53 @@ function bindTaskTooltips() {
   const rows = els.ganttChart?.querySelectorAll(".project-task-row[data-task-key]");
   if (!rows?.length) return;
   const tooltip = ensureTaskTooltip();
+  const hoverDelay = 1200;
+  let pendingPoint = null;
 
-  const show = (event, row) => {
+  const clearPendingShow = () => {
+    if (tooltip._showTimer) {
+      window.clearTimeout(tooltip._showTimer);
+      tooltip._showTimer = null;
+    }
+  };
+
+  const show = (row, point) => {
     const task = state.ganttTaskLookup.get(row.dataset.taskKey);
     if (!task) return;
     tooltip.innerHTML = buildTaskTooltipHtml(task);
     tooltip.hidden = false;
     tooltip.classList.add("visible");
-    positionTaskTooltip(event, tooltip);
+    positionTaskTooltip(point, tooltip);
   };
 
-  const move = event => {
+  const move = (event, row) => {
+    pendingPoint = { clientX: event.clientX, clientY: event.clientY };
     if (tooltip.hidden) return;
-    positionTaskTooltip(event, tooltip);
+    if (tooltip.dataset.taskKey !== row.dataset.taskKey) return;
+    positionTaskTooltip(pendingPoint, tooltip);
   };
 
   const hide = () => {
+    clearPendingShow();
+    pendingPoint = null;
+    tooltip.dataset.taskKey = "";
     tooltip.classList.remove("visible");
     tooltip.hidden = true;
   };
 
+  const scheduleShow = (event, row) => {
+    clearPendingShow();
+    pendingPoint = { clientX: event.clientX, clientY: event.clientY };
+    tooltip._showTimer = window.setTimeout(() => {
+      tooltip._showTimer = null;
+      tooltip.dataset.taskKey = row.dataset.taskKey;
+      show(row, pendingPoint || { clientX: event.clientX, clientY: event.clientY });
+    }, hoverDelay);
+  };
+
   rows.forEach(row => {
-    row.addEventListener("mouseenter", event => show(event, row));
-    row.addEventListener("mousemove", move);
+    row.addEventListener("mouseenter", event => scheduleShow(event, row));
+    row.addEventListener("mousemove", event => move(event, row));
     row.addEventListener("mouseleave", hide);
   });
 
@@ -1561,13 +1585,17 @@ function ensureTaskTooltip() {
 }
 
 function positionTaskTooltip(event, tooltip) {
-  const offsetX = 18;
-  const offsetY = 18;
+  const offsetX = 16;
+  const offsetY = 16;
   const width = tooltip.offsetWidth || 320;
   const height = tooltip.offsetHeight || 180;
   const maxLeft = Math.max(12, window.innerWidth - width - 12);
   const left = clamp(event.clientX + offsetX, 12, maxLeft);
-  const top = clamp(event.clientY + offsetY, 12, Math.max(12, window.innerHeight - height - 12));
+  const preferredTop = event.clientY - height - offsetY;
+  const fallbackTop = event.clientY + offsetY;
+  const top = preferredTop >= 12
+    ? preferredTop
+    : clamp(fallbackTop, 12, Math.max(12, window.innerHeight - height - 12));
   tooltip.style.left = `${left}px`;
   tooltip.style.top = `${top}px`;
 }
