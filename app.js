@@ -38,7 +38,7 @@ const i18n = {
     statCompletion: "完成率",
     statOverdue: "逾期風險", statOverdueNote: "未完成且超過截止日",
     statNoDue: "未排期", statNoDueNote: "無 Due Date，進入欄目但不畫條",
-    tabGantt: "甘特作戰圖", tabAnalytics: "任務分析", tabPmo: "PMO 總覽", tabTable: "任務清單",
+    tabGantt: "甘特圖", tabAnalytics: "任務分析", tabPmo: "PMO 總覽", tabTable: "任務清單",
     ganttTitle: "可摺疊層級甘特圖",
     ganttDesc: "一級分組可展開/收起；二級按負責人或分組組織。無 Due Date 的任務保留在所在層級，用「未排期」行顯示，不繪製時間條。",
     focusMode: "專注模式", focusModeExit: "退出專注",
