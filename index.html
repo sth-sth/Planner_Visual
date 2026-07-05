@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planner PMO Workbench</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./xlsx.full.min.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-copy-block">
+        <p class="eyebrow">Planner PMO Workbench</p>
+        <h1 data-i18n="heroHeading">把 Planner Excel 變成可執行的專案作戰台</h1>
+        <p class="hero-copy" data-i18n="heroCopy">自動識別 Planner 匯出的 Tasks、Consolidated Data、Buckets、Users 工作表，修復 ID 顯示問題；按專案分組、負責人和狀態組織任務，未設置 Due Date 的任務仍會進入欄目與清單，但不會繪製甘特條。</p>
+        <div class="hero-badges">
+          <span data-i18n="badge1">本機解析</span>
+          <span data-i18n="badge2">可摺疊甘特層級</span>
+          <span data-i18n="badge3">PMO 風險視圖</span>
+        </div>
+      </div>
+      <label class="upload-card" for="fileInput">
+        <input id="fileInput" type="file" accept=".xlsx,.xls">
+        <span class="upload-icon">+</span>
+        <strong data-i18n="uploadBtn">選擇 Planner Excel</strong>
+        <small id="fileLabel" data-i18n="uploadHint">支援 Planner 預設多工作表匯出</small>
+      </label>
+    </section>
+
+    <section class="notice" id="notice">
+      請上傳 Microsoft Planner 匯出的 Excel。建議保留 Tasks、Buckets、Users 和 Consolidated Data 工作表。
+    </section>
+
+    <section class="workspace-layout">
+      <aside class="filter-panel" aria-label="篩選控制">
+        <div class="filter-title">
+          <div>
+            <span data-i18n="commandLabel">Command</span>
+            <strong data-i18n="filterTitle">篩選與視圖</strong>
+          </div>
+          <div class="filter-title-actions">
+            <button id="langBtn" type="button" class="ghost-btn lang-btn">EN</button>
+            <button id="resetBtn" type="button" class="ghost-btn" data-i18n="resetBtn">重置</button>
+          </div>
+        </div>
+
+        <details class="filter-section" open>
+          <summary data-i18n="sectionFileTime">檔案與時間</summary>
+          <div class="section-body">
+            <div class="control">
+              <label for="sheetSelect" data-i18n="labelSheet">任務資料來源</label>
+              <select id="sheetSelect" disabled>
+                <option data-i18n-option="sheetPlaceholder">等待上傳</option>
+              </select>
+              <p class="hint" data-i18n="sheetHint">優先讀取 Consolidated Data；選擇 Tasks 時會自動用 Buckets / Users 映射名稱。</p>
+            </div>
+            <div class="control date-control">
+              <label data-i18n="labelWindow">視窗範圍</label>
+              <div class="date-row">
+                <input id="startDate" type="date">
+                <input id="endDate" type="date">
+              </div>
+            </div>
+            <div class="control">
+              <label for="groupBy" data-i18n="labelGroup1">甘特一級分組</label>
+              <select id="groupBy">
+                <option value="bucket" data-i18n-option="optBucket">專案分組 / Bucket</option>
+                <option value="assignedTo" data-i18n-option="optAssigned">負責人 / Owner</option>
+                <option value="status" data-i18n-option="optStatus">狀態 / Status</option>
+                <option value="priority" data-i18n-option="optPriority">優先級 / Priority</option>
+                <option value="dueWeek" data-i18n-option="optDueWeek">截止週 / Due Week</option>
+                <option value="none" data-i18n-option="optNone">不分組</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="subGroupBy" data-i18n="labelGroup2">甘特二級分組</label>
+              <select id="subGroupBy">
+                <option value="none" data-i18n-option="optNone">不分組</option>
+                <option value="bucket" data-i18n-option="optBucket">專案分組 / Bucket</option>
+                <option value="assignedTo" data-i18n-option="optAssigned">負責人 / Owner</option>
+                <option value="status" data-i18n-option="optStatus">狀態 / Status</option>
+                <option value="priority" data-i18n-option="optPriority">優先級 / Priority</option>
+                <option value="dueWeek" data-i18n-option="optDueWeek">截止週 / Due Week</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="searchInput" data-i18n="labelSearch">全域搜尋</label>
+              <input id="searchInput" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="任務、負責人、分組、標籤、備註...">
+            </div>
+          </div>
+        </details>
+
+        <details class="filter-section" open>
+          <summary><span class="filter-section-title" data-i18n="sectionBucket">專案分組</span> <span id="bucketCount">0</span></summary>
+          <div id="bucketFilter" class="option-list"></div>
+        </details>
+
+        <details class="filter-section">
+          <summary><span class="filter-section-title" data-i18n="sectionAssignee">負責人</span> <span id="assigneeCount">0</span></summary>
+          <div id="assigneeFilter" class="option-list"></div>
+        </details>
+
+        <details class="filter-section">
+          <summary><span class="filter-section-title" data-i18n="sectionStatus">狀態</span> <span id="statusCount">0</span></summary>
+          <div id="statusFilter" class="option-list"></div>
+        </details>
+
+        <button id="csvBtn" type="button" class="export-btn" data-i18n="exportBtn">匯出當前 CSV</button>
+      </aside>
+
+      <section class="main-workspace">
+        <section class="stats" aria-label="專案指標">
+          <article class="stat"><span data-i18n="statTotal">任務總數</span><strong id="totalTasks">0</strong><em data-i18n="statTotalNote">當前篩選範圍</em></article>
+          <article class="stat"><span data-i18n="statCompletion">完成率</span><strong id="completionRate">0%</strong><em id="completedNote">0 個已完成</em></article>
+          <article class="stat danger"><span data-i18n="statOverdue">逾期風險</span><strong id="overdueTasks">0</strong><em data-i18n="statOverdueNote">未完成且超過截止日</em></article>
+          <article class="stat warning"><span data-i18n="statNoDue">未排期</span><strong id="noDueTasks">0</strong><em data-i18n="statNoDueNote">無 Due Date，進入欄目但不畫條</em></article>
+        </section>
+
+        <section class="tabs" aria-label="工作區">
+          <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="gantt" data-i18n="tabGantt">甘特作戰圖</button>
+            <button class="tab-btn" data-tab="analytics" data-i18n="tabAnalytics">任務分析</button>
+            <button class="tab-btn" data-tab="pmo" data-i18n="tabPmo">PMO 總覽</button>
+            <button class="tab-btn" data-tab="table" data-i18n="tabTable">任務清單</button>
+          </nav>
+
+          <article class="panel active" id="tab-gantt">
+            <div class="chart-header">
+              <div>
+                <h2 data-i18n="ganttTitle">可摺疊層級甘特圖</h2>
+                <p data-i18n="ganttDesc">一級分組可展開/收起；二級按負責人或分組組織。無 Due Date 的任務保留在所在層級，用「未排期」行顯示，不繪製時間條。</p>
+              </div>
+              <div class="view-actions">
+                <button id="focusModeBtn" type="button" class="ghost-btn" data-i18n="focusMode">專注模式</button>
+                <button id="densityBtn" type="button" class="ghost-btn" data-i18n="densityBtn">緊湊視圖</button>
+                <button id="expandAllBtn" type="button" class="ghost-btn" data-i18n="expandAll">展開全部</button>
+                <button id="collapseAllBtn" type="button" class="ghost-btn" data-i18n="collapseAll">收起全部</button>
+              </div>
+            </div>
+            <div class="gantt-legend">
+              <span class="legend-item"><i style="background:#D92D20"></i><span data-i18n="legendUrgent">Urgent 緊急</span></span>
+              <span class="legend-item"><i style="background:#F79009"></i><span data-i18n="legendImportant">Important 重要</span></span>
+              <span class="legend-item"><i style="background:#0054A6"></i><span data-i18n="legendMedium">Medium 中等</span></span>
+              <span class="legend-item"><i style="background:#8EA4BA"></i><span data-i18n="legendLow">Low 低</span></span>
+            </div>
+            <div id="ganttMeta" class="chart-note" data-i18n="ganttMeta">上傳 Excel 後顯示專案排期。</div>
+            <div id="ganttChart" class="chart tall"></div>
+          </article>
+
+          <article class="panel" id="tab-analytics">
+            <div class="chart-header">
+              <div>
+                <h2 data-i18n="analyticsTitle">任務分析</h2>
+                <p data-i18n="analyticsDesc">按優先級、截止時間和負責人維度分析任務分佈，輔助專案決策。</p>
+              </div>
+            </div>
+            <div class="analytics-grid">
+              <section class="analytics-card">
+                <h3 data-i18n="analyticsPriority">優先級分佈</h3>
+                <div id="priorityChart" class="analytics-chart"></div>
+              </section>
+              <section class="analytics-card">
+                <h3 data-i18n="analyticsAssignee">負責人完成率</h3>
+                <div id="assigneeCompletionChart" class="analytics-chart"></div>
+              </section>
+              <section class="analytics-card span-full">
+                <h3 data-i18n="analyticsWeekly">每週到期任務</h3>
+                <div id="weeklyDueChart" class="analytics-chart"></div>
+              </section>
+            </div>
+          </article>
+
+          <article class="panel" id="tab-pmo">
+            <div class="chart-header">
+              <div>
+                <h2 data-i18n="pmoTitle">PMO 總覽</h2>
+                <p data-i18n="pmoDesc">聚焦能指導專案經理行動的指標：組合健康、分組進度、負責人負荷和風險清單。</p>
+              </div>
+            </div>
+            <div class="pmo-grid">
+              <section class="insight-card span-2">
+                <h3 data-i18n="pmoHealth">組合健康</h3>
+                <div id="healthPanel" class="health-panel"></div>
+              </section>
+              <section class="insight-card">
+                <h3 data-i18n="pmoWorkload">負責人負荷</h3>
+                <div id="workloadPanel" class="rank-list"></div>
+              </section>
+              <section class="insight-card">
+                <h3 data-i18n="pmoBucket">分組進度</h3>
+                <div id="bucketPanel" class="rank-list"></div>
+              </section>
+              <section class="insight-card span-2">
+                <h3 data-i18n="pmoRisk">需要關注</h3>
+                <div id="riskPanel" class="risk-list"></div>
+              </section>
+            </div>
+          </article>
+
+          <article class="panel" id="tab-table">
+            <div class="table-tools">
+              <span id="tableCount" class="table-count">0 條任務</span>
+            </div>
+            <div class="table-wrap">
+              <table id="taskTable">
+                <thead>
+                  <tr>
+                    <th data-i18n="thTask">任務名稱</th><th data-i18n="thBucket">專案分組</th><th data-i18n="thAssignee">負責人</th><th data-i18n="thStatus">狀態</th><th data-i18n="thPriority">優先級</th>
+                    <th data-i18n="thStart">開始</th><th data-i18n="thDue">截止</th><th data-i18n="thCompleted">完成</th><th data-i18n="thLabels">標籤 / Checklist</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
