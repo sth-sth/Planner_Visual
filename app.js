@@ -4,6 +4,7 @@ const state = {
   rawRows: [],
   tasks: [],
   filtered: [],
+  ganttTaskLookup: new Map(),
   context: { buckets: new Map(), users: new Map(), goals: new Map(), planName: "" },
   ganttCols: { task: 286, owner: 128, start: 84, finish: 84 },
   filtersCollapsed: false,
@@ -420,16 +421,17 @@ function normalizePlannerRows(rows, context) {
     const viewGanttStart = toProjectYear(ganttStart);
     const viewGanttEnd = toProjectYear(ganttEnd);
     const lateRaw = cleanText(pick(row, ["Late", "Is Late", "逾期"]));
-    const checklistDone = cleanText(pick(row, ["Completed Checklist Items", "Completed checklist items", "已完成检查项"]));
-    const checklistItems = cleanText(pick(row, ["Checklist Items", "Checklist items", "Checklist", "检查清单项目", "检查清单"]));
+    const checklistMeta = parseChecklistMeta(row);
     const labels = cleanText(pick(row, ["Labels", "Label names", "标签"]));
     const notes = cleanText(pick(row, ["Notes", "Description", "说明", "备注"]));
+    const assignees = unique(userResult.value ? splitPersonNames(userResult.value) : []);
 
     return {
       rowIndex: index + 1,
       task: taskName,
       bucket: bucketResult.value || t("ungrouped"),
-      assignedTo: userResult.value || t("unassigned"),
+      assignedTo: assignees.join("; ") || t("unassigned"),
+      assignees,
       progress,
       status,
       priority,
@@ -447,7 +449,11 @@ function normalizePlannerRows(rows, context) {
       viewGanttStart,
       viewGanttEnd,
       late: /^true|yes|是|1$/i.test(lateRaw),
-      checklist: [checklistDone, checklistItems].filter(Boolean).join(" · "),
+      checklist: checklistMeta.summary,
+      checklistItems: checklistMeta.items,
+      checklistDoneItems: checklistMeta.doneItems,
+      checklistDoneCount: checklistMeta.doneCount,
+      checklistTotalCount: checklistMeta.totalCount,
       labels,
       description: notes,
       bucketWasMapped: bucketResult.mapped,
@@ -486,6 +492,62 @@ function splitPeopleRaw(value) {
   const uuidParts = text.split(/[,\n\t ]+/).map(cleanText).filter(Boolean);
   if (uuidParts.length > 1 && uuidParts.every(isLikelyId)) return uuidParts;
   return [text];
+}
+
+function parseChecklistMeta(row) {
+  const doneRaw = cleanText(pick(row, ["Completed Checklist Items", "Completed checklist items", "已完成检查项"]));
+  const itemsRaw = cleanText(pick(row, ["Checklist Items", "Checklist items", "Checklist", "检查清单项目", "检查清单"]));
+  const items = parseChecklistItems(itemsRaw);
+  const doneItems = parseChecklistItems(doneRaw);
+  const doneProgress = parseChecklistProgress(doneRaw);
+  const itemsProgress = parseChecklistProgress(itemsRaw);
+  const doneCount = doneProgress?.done ?? parseChecklistCount(doneRaw) ?? doneItems.length;
+  const totalCount = itemsProgress?.total ?? doneProgress?.total ?? parseChecklistCount(itemsRaw) ?? items.length;
+  const summaryParts = [];
+
+  if (totalCount || doneCount) {
+    const safeTotal = Math.max(totalCount, doneCount);
+    summaryParts.push(`${Math.min(doneCount, safeTotal)}/${safeTotal}`);
+  }
+  if (items.length) summaryParts.push(items.slice(0, 3).join(" · "));
+  else if (!summaryParts.length && itemsRaw) summaryParts.push(itemsRaw);
+
+  return {
+    summary: summaryParts.join(" · "),
+    items,
+    doneItems,
+    doneCount,
+    totalCount
+  };
+}
+
+function parseChecklistProgress(value) {
+  const text = cleanText(value);
+  if (!text) return null;
+  const ratio = text.match(/(\d+)\s*\/\s*(\d+)/);
+  if (!ratio) return null;
+  return { done: Number(ratio[1]), total: Number(ratio[2]) };
+}
+
+function parseChecklistItems(value) {
+  const text = cleanText(value);
+  if (!text) return [];
+  const normalized = text
+    .replace(/\s*[|｜；;]\s*/g, "\n")
+    .replace(/\s*[•·▪▫]\s*/g, "\n")
+    .replace(/\s*[,，](?=\s*[A-Za-z\u4e00-\u9fff0-9])/g, "\n");
+  const parts = normalized.split(/\n+/).map(cleanText).filter(Boolean);
+  if (parts.length === 1 && /^\d+(?:\s*\/\s*\d+)?$/.test(parts[0])) return [];
+  return unique(parts.map(item => item.replace(/^[-*]\s*/, "")).filter(Boolean));
+}
+
+function parseChecklistCount(value) {
+  const text = cleanText(value);
+  if (!text) return null;
+  if (/^\d+$/.test(text)) return Number(text);
+  const ratio = text.match(/(\d+)\s*\/\s*(\d+)/);
+  if (ratio) return Number(ratio[2]);
+  return null;
 }
 
 function pick(row, names) {
@@ -652,7 +714,7 @@ function applyFiltersAndRender() {
   const query = els.searchInput.value.trim().toLowerCase();
 
   state.filtered = state.tasks.filter(task => {
-    const taskAssignees = splitPersonNames(task.assignedTo);
+    const taskAssignees = getTaskAssignees(task);
     const inAssignee = !hasAssigneeOptions || taskAssignees.some(a => assignees.includes(a)) || assignees.includes(task.assignedTo);
     const hasSchedule = task.viewGanttStart && task.viewGanttEnd;
     const inDate = !start || !end || !hasSchedule || (task.viewGanttStart <= end && task.viewGanttEnd >= start);
@@ -728,7 +790,7 @@ function clearVisuals() {
 }
 
 function renderGantt(options = {}) {
-  const tasks = state.filtered.slice().sort(compareForGantt);
+  const tasks = state.filtered.slice();
   const scheduled = tasks.filter(t => t.viewDueDate && t.viewGanttStart && t.viewGanttEnd);
   const noDue = tasks.filter(t => !t.viewDueDate).length;
   const noStart = tasks.filter(t => t.viewDueDate && !t.viewGanttStart).length;
@@ -754,6 +816,8 @@ function renderGantt(options = {}) {
   const today = getProjectToday();
   const todayLeft = dayDiff(timelineStart, today) * pxPerDay;
   const groupField = els.groupBy.value || "bucket";
+  const subGroupField = els.subGroupBy?.value || "none";
+  const renderTasks = expandTasksForGrouping(tasks, [groupField, subGroupField]).sort(compareForGantt);
 
   if (els.ganttMeta) {
     const hidden = [
@@ -777,7 +841,7 @@ function renderGantt(options = {}) {
     ? `<div class="today-line project-style" style="left:${todayLeft}px"><span>${escapeHtml(t("todayLabel"))}</span></div>`
     : "";
 
-  const groups = groupTasks(tasks, task => getGroupLabel(task, groupField));
+  const groups = groupTasks(renderTasks, task => getGroupLabel(task, groupField));
   const plannedPercent = tasks.length ? Math.round(scheduled.length / tasks.length * 100) : 0;
   const summaryHtml = `
     <div class="project-summary-line">
@@ -789,8 +853,6 @@ function renderGantt(options = {}) {
   const bodyTodayHtml = today >= timelineStart && today <= timelineEnd
     ? `<div class="project-today-body" style="left:calc(var(--left) + ${todayLeft}px)"></div>`
     : "";
-
-  const subGroupField = els.subGroupBy?.value || "none";
 
   const groupHtml = Object.entries(groups).map(([groupName, groupRows], index) => {
     const groupScheduled = groupRows.filter(t => t.viewDueDate && t.viewGanttStart && t.viewGanttEnd);
@@ -863,8 +925,10 @@ function renderGantt(options = {}) {
       </div>
     </div>
   `;
+  state.ganttTaskLookup = new Map(renderTasks.map(task => [task.renderKey, task]));
   bindGanttColumnResizers();
   bindGanttScrollControls();
+  bindTaskTooltips();
   restoreGanttViewport(viewport, { timelineStart, timelineEnd, pxPerDay, timelineWidth, leftWidth });
 }
 
@@ -884,6 +948,7 @@ function renderGanttRow(task, timelineStart, totalDays, pxPerDay, timelineWidth,
   const color = palette[task.priority] || palette.Normal;
   const dueClass = task.status === "Overdue" ? "danger" : isDueSoon(task) ? "warning" : "";
   const rowNumber = String(taskIndex + 1).padStart(2, "0");
+  const assigneeText = formatTaskAssigneeDisplay(task);
 
   let laneContent = `<span class="project-unscheduled">No due date</span>`;
   if (hasBar) {
@@ -893,27 +958,18 @@ function renderGanttRow(task, timelineStart, totalDays, pxPerDay, timelineWidth,
     const left = startOffset * pxPerDay;
     const width = Math.max(12, (endOffset - startOffset) * pxPerDay);
     const duration = Math.max(1, dayDiff(task.viewGanttStart, endForBar) + 1);
-    const tooltip = [
-      task.task,
-      `${state.lang === "zh" ? "負責人" : "Owner"}：${task.assignedTo}`,
-      `${state.lang === "zh" ? "分組" : "Group"}：${task.bucket}`,
-      `${state.lang === "zh" ? "狀態" : "Status"}：${task.status}`,
-      `${state.lang === "zh" ? "開始" : "Start"}：${formatDate(task.viewStartDate) || (state.lang === "zh" ? "未設置" : "N/A")}`,
-      `${state.lang === "zh" ? "截止" : "Due"}：${formatDate(task.viewDueDate)}`,
-      `${state.lang === "zh" ? "時長" : "Duration"}：${duration} ${state.lang === "zh" ? "天" : "days"}`
-    ].join("\n");
     laneContent = `
-      <div class="project-task-bar ${dueClass}" title="${escapeAttr(tooltip)}" data-bar-left="${left}" data-bar-width="${width}" style="left:${left}px;width:${width}px;background:${color}">
+      <div class="project-task-bar ${dueClass}" data-task-key="${escapeAttr(task.renderKey)}" data-bar-left="${left}" data-bar-width="${width}" style="left:${left}px;width:${width}px;background:${color}">
         <span>${duration}d</span>
       </div>
     `;
   }
 
   return `
-    <div class="gantt-grid-row project-task-row ${hasBar ? "" : "no-bar"}" style="--timeline-width:${timelineWidth}px">
+    <div class="gantt-grid-row project-task-row ${hasBar ? "" : "no-bar"}" data-task-key="${escapeAttr(task.renderKey)}" style="--timeline-width:${timelineWidth}px">
       <div class="project-table-row sticky-left">
         <div class="project-task-name"><span class="row-index">${rowNumber}</span><span>${escapeHtml(task.task)}</span></div>
-        <div class="project-owner">${escapeHtml(task.assignedTo || t("unassigned"))}</div>
+        <div class="project-owner">${escapeHtml(assigneeText)}</div>
         <div>${formatDate(task.viewStartDate) || "—"}</div>
         <div class="${task.viewDueDate ? "" : "muted-cell"}">${formatDate(task.viewDueDate) || "No date"}</div>
       </div>
@@ -988,7 +1044,7 @@ function getGroupLabel(task, field) {
     return `${weekStart.getFullYear()}-${String(weekStart.getMonth()+1).padStart(2,'0')}-${String(weekStart.getDate()).padStart(2,'0')} ${state.lang === "zh" ? "週" : "Wk"}`;
   }
   const labelMap = { bucket: t("ungrouped"), assignedTo: t("unassigned"), status: t("unknown"), priority: "Normal" };
-  const raw = cleanText(task[field]);
+  const raw = cleanText(task.groupValues?.[field] ?? task[field]);
   if (!raw || isLikelyId(raw)) return labelMap[field] || t("ungrouped");
   return raw;
 }
@@ -1422,13 +1478,141 @@ function csvEscape(value) {
 
 function splitAssignees(tasks) {
   return tasks.flatMap(task => {
-    const names = splitPersonNames(task.assignedTo);
+    const names = getTaskAssignees(task);
     return (names.length ? names : [t("unassigned")]).map(name => ({ ...task, assignedTo: name }));
   });
 }
 
 function splitPersonNames(text) {
   return cleanText(text).split(/\s*[;；]\s*/).map(cleanText).filter(Boolean);
+}
+
+function getTaskAssignees(task) {
+  const names = Array.isArray(task?.assignees) ? task.assignees : splitPersonNames(task?.assignedTo || "");
+  return names.length ? unique(names) : [];
+}
+
+function expandTasksForGrouping(tasks, fields) {
+  const needsAssigneeExpansion = fields.includes("assignedTo");
+  return tasks.flatMap(task => {
+    if (!needsAssigneeExpansion) return [{ ...task, renderKey: `${task.rowIndex}:base` }];
+    const assignees = getTaskAssignees(task);
+    const values = assignees.length ? assignees : [t("unassigned")];
+    return values.map((assignee, index) => ({
+      ...task,
+      groupValues: { ...(task.groupValues || {}), assignedTo: assignee },
+      renderKey: `${task.rowIndex}:assignedTo:${assignee}:${index}`
+    }));
+  });
+}
+
+function formatTaskAssigneeDisplay(task) {
+  const assignees = getTaskAssignees(task);
+  if (!assignees.length) return t("unassigned");
+  const activeAssignee = cleanText(task.groupValues?.assignedTo);
+  if (!activeAssignee || assignees.length === 1) return assignees.join("; ");
+  const others = assignees.filter(name => name !== activeAssignee);
+  return others.length ? `${activeAssignee} +${others.length}` : activeAssignee;
+}
+
+function bindTaskTooltips() {
+  const rows = els.ganttChart?.querySelectorAll(".project-task-row[data-task-key]");
+  if (!rows?.length) return;
+  const tooltip = ensureTaskTooltip();
+
+  const show = (event, row) => {
+    const task = state.ganttTaskLookup.get(row.dataset.taskKey);
+    if (!task) return;
+    tooltip.innerHTML = buildTaskTooltipHtml(task);
+    tooltip.hidden = false;
+    tooltip.classList.add("visible");
+    positionTaskTooltip(event, tooltip);
+  };
+
+  const move = event => {
+    if (tooltip.hidden) return;
+    positionTaskTooltip(event, tooltip);
+  };
+
+  const hide = () => {
+    tooltip.classList.remove("visible");
+    tooltip.hidden = true;
+  };
+
+  rows.forEach(row => {
+    row.addEventListener("mouseenter", event => show(event, row));
+    row.addEventListener("mousemove", move);
+    row.addEventListener("mouseleave", hide);
+  });
+
+  els.ganttChart.querySelector(".project-scroll")?.addEventListener("scroll", hide, { passive: true });
+}
+
+function ensureTaskTooltip() {
+  let tooltip = document.getElementById("ganttTaskTooltip");
+  if (!tooltip) {
+    tooltip = document.createElement("div");
+    tooltip.id = "ganttTaskTooltip";
+    tooltip.className = "gantt-task-tooltip";
+    tooltip.hidden = true;
+    document.body.appendChild(tooltip);
+  }
+  return tooltip;
+}
+
+function positionTaskTooltip(event, tooltip) {
+  const offsetX = 18;
+  const offsetY = 18;
+  const width = tooltip.offsetWidth || 320;
+  const height = tooltip.offsetHeight || 180;
+  const maxLeft = Math.max(12, window.innerWidth - width - 12);
+  const left = clamp(event.clientX + offsetX, 12, maxLeft);
+  const top = clamp(event.clientY + offsetY, 12, Math.max(12, window.innerHeight - height - 12));
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function buildTaskTooltipHtml(task) {
+  const assignees = getTaskAssignees(task);
+  const activeAssignee = cleanText(task.groupValues?.assignedTo);
+  const sharedWith = activeAssignee ? assignees.filter(name => name !== activeAssignee) : [];
+  const startText = formatDate(task.viewStartDate) || (state.lang === "zh" ? "未設置" : "N/A");
+  const dueText = formatDate(task.viewDueDate) || (state.lang === "zh" ? "未設置" : "N/A");
+  const duration = task.viewGanttStart && task.viewGanttEnd
+    ? Math.max(1, dayDiff(task.viewGanttStart, task.viewGanttEnd <= task.viewGanttStart ? addDays(task.viewGanttStart, 1) : task.viewGanttEnd) + 1)
+    : null;
+  const checklistItems = Array.isArray(task.checklistItems) ? task.checklistItems : [];
+  const checklistProgress = task.checklistTotalCount
+    ? `${Math.min(task.checklistDoneCount, task.checklistTotalCount)}/${task.checklistTotalCount}`
+    : task.checklist;
+
+  return `
+    <div class="gantt-task-tooltip-card">
+      <div class="gantt-task-tooltip-head">
+        <strong>${escapeHtml(task.task)}</strong>
+        <span class="status-chip ${statusClass(task.status)}">${escapeHtml(statusLabel(task.status))}</span>
+      </div>
+      <div class="gantt-task-tooltip-meta">
+        <span>${escapeHtml(task.bucket)}</span>
+        <span>${escapeHtml(task.priority || "Normal")}</span>
+        ${duration ? `<span>${escapeHtml(String(duration))}${state.lang === "zh" ? " 天" : "d"}</span>` : ""}
+      </div>
+      <div class="gantt-task-tooltip-grid">
+        <div><label>${state.lang === "zh" ? "負責人" : "Owner"}</label><p>${escapeHtml(assignees.join("; ") || t("unassigned"))}</p></div>
+        <div><label>${state.lang === "zh" ? "開始" : "Start"}</label><p>${escapeHtml(startText)}</p></div>
+        <div><label>${state.lang === "zh" ? "截止" : "Due"}</label><p>${escapeHtml(dueText)}</p></div>
+        <div><label>${state.lang === "zh" ? "建立者" : "Created by"}</label><p>${escapeHtml(task.createdBy || "-")}</p></div>
+      </div>
+      ${sharedWith.length ? `<div class="gantt-task-tooltip-block"><label>${state.lang === "zh" ? "協作者" : "Shared with"}</label><p>${escapeHtml(sharedWith.join("; "))}</p></div>` : ""}
+      ${task.labels ? `<div class="gantt-task-tooltip-block"><label>${state.lang === "zh" ? "標籤" : "Labels"}</label><p>${escapeHtml(task.labels)}</p></div>` : ""}
+      ${checklistProgress || checklistItems.length ? `
+        <div class="gantt-task-tooltip-block">
+          <label>${state.lang === "zh" ? "Checklist / 分任務" : "Checklist / Subtasks"}${checklistProgress ? `<span>${escapeHtml(checklistProgress)}</span>` : ""}</label>
+          ${checklistItems.length ? `<ul>${checklistItems.slice(0, 6).map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : `<p>${escapeHtml(task.checklist || (state.lang === "zh" ? "有清單資料" : "Checklist available"))}</p>`}
+        </div>` : ""}
+      ${task.description ? `<div class="gantt-task-tooltip-block"><label>${state.lang === "zh" ? "備註" : "Notes"}</label><p>${escapeHtml(task.description)}</p></div>` : ""}
+    </div>
+  `;
 }
 
 function countBy(items, getKey) {

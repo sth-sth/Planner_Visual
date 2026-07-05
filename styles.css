@@ -2011,6 +2011,14 @@ button:not(.ghost-btn) {
   border-radius: 4px;
   opacity: 1;
   box-shadow: 0 2px 4px rgba(0,59,121,.18);
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+
+.project-task-row:hover .project-task-bar {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,59,121,.22);
+  filter: saturate(1.05);
 }
 
 .project-task-bar::before,
@@ -2658,6 +2666,104 @@ button:not(.ghost-btn) {
   pointer-events: none;
   z-index: 2;
   transition: left .05s ease;
+}
+
+.gantt-task-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 160;
+  width: 320px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transition: opacity .1s ease, transform .1s ease;
+}
+
+.gantt-task-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.gantt-task-tooltip-card {
+  padding: 14px;
+  border: 1px solid rgba(0, 84, 166, .18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 18px 44px rgba(7, 43, 89, .18);
+  backdrop-filter: blur(10px);
+}
+
+.gantt-task-tooltip-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gantt-task-tooltip-head strong {
+  color: #12355a;
+  font: 900 14px/1.35 "Aptos", "Segoe UI", sans-serif;
+}
+
+.gantt-task-tooltip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.gantt-task-tooltip-meta span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #edf5ff;
+  color: #31587f;
+  font: 800 10px/1 "Aptos", "Segoe UI", sans-serif;
+}
+
+.gantt-task-tooltip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.gantt-task-tooltip-grid label,
+.gantt-task-tooltip-block label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: #6a8097;
+  font: 900 10px/1.1 "Aptos", "Segoe UI", sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.gantt-task-tooltip-grid p,
+.gantt-task-tooltip-block p {
+  margin: 0;
+  color: #173b60;
+  font: 750 12px/1.45 "Aptos", "Segoe UI", sans-serif;
+  word-break: break-word;
+}
+
+.gantt-task-tooltip-block {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 84, 166, .10);
+}
+
+.gantt-task-tooltip-block ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #173b60;
+  font: 750 12px/1.45 "Aptos", "Segoe UI", sans-serif;
+}
+
+.gantt-task-tooltip-block li + li {
+  margin-top: 4px;
 }
 
 /* Hide old week-tick styles (no longer used) */
