@@ -1934,7 +1934,7 @@ button:not(.ghost-btn) {
 }
 
 .project-group-schedule-cell {
-  justify-content: flex-end;
+  justify-content: flex-start;
   padding: 0 12px;
   background: rgba(255, 255, 255, .20);
 }
@@ -1951,7 +1951,7 @@ button:not(.ghost-btn) {
   color: #305677;
   font-size: 11px;
   line-height: 1.25;
-  text-align: right;
+  text-align: left;
   white-space: nowrap;
 }
 
@@ -2082,7 +2082,7 @@ button:not(.ghost-btn) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-align: right;
+  text-align: left;
   color: #173b60;
   font: 900 11px/1.15 "Aptos", "Segoe UI", sans-serif;
 }
