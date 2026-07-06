@@ -2087,6 +2087,10 @@ button:not(.ghost-btn) {
   font: 900 11px/1.15 "Aptos", "Segoe UI", sans-serif;
 }
 
+.project-schedule-value.is-missing {
+  color: #7a8ea2;
+}
+
 .project-schedule-cell.is-open {
   background: linear-gradient(180deg, rgba(244, 249, 255, .9), rgba(255, 255, 255, .95));
 }

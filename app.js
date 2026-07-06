@@ -1688,17 +1688,18 @@ function buildTaskTooltipHtml(task) {
 }
 
 function buildScheduleCellHtml(task) {
-  const startText = formatDate(task.viewStartDate) || "—";
+  const hasStartDate = Boolean(task.viewStartDate);
+  const startText = formatDate(task.viewStartDate) || (state.lang === "zh" ? "未設置" : "Not set");
   const dueText = formatDate(task.viewDueDate) || (state.lang === "zh" ? "未設置" : "No date");
   return `
     <div class="project-schedule-cell ${task.viewDueDate ? "" : "is-open"}">
       <div class="project-schedule-row">
         <span class="project-schedule-label">${state.lang === "zh" ? "開始" : "Start"}</span>
-        <span class="project-schedule-value">${escapeHtml(startText)}</span>
+        <span class="project-schedule-value ${hasStartDate ? "" : "is-missing muted-cell"}">${escapeHtml(startText)}</span>
       </div>
       <div class="project-schedule-row ${task.viewDueDate ? "" : "is-open"}">
         <span class="project-schedule-label">${state.lang === "zh" ? "截止" : "Due"}</span>
-        <span class="project-schedule-value ${task.viewDueDate ? "" : "muted-cell"}">${escapeHtml(dueText)}</span>
+        <span class="project-schedule-value ${task.viewDueDate ? "" : "is-missing muted-cell"}">${escapeHtml(dueText)}</span>
       </div>
     </div>
   `;
