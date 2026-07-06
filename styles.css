@@ -2047,8 +2047,11 @@ button:not(.ghost-btn) {
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
+  align-self: stretch;
+  width: 100%;
   gap: 3px;
   padding: 6px 12px;
+  box-sizing: border-box;
   overflow: hidden;
   white-space: normal;
 }
@@ -2056,6 +2059,8 @@ button:not(.ghost-btn) {
 .project-schedule-row {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  width: 100%;
   gap: 0;
   min-height: 0;
   padding: 0;
@@ -2068,7 +2073,10 @@ button:not(.ghost-btn) {
 }
 
 .project-schedule-label {
-  flex: 0 0 34px;
+  display: inline-block;
+  flex: 0 0 52px;
+  min-width: 52px;
+  max-width: 52px;
   color: #72889d;
   font: 900 9px/1 "Aptos", "Segoe UI", sans-serif;
   letter-spacing: .08em;
