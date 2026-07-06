@@ -1987,6 +1987,34 @@ button:not(.ghost-btn) {
   color: #60758a !important;
 }
 
+.project-schedule-cell {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 6px 10px 6px 12px;
+}
+
+.project-schedule-cell span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #244766;
+  font: 800 11px/1.15 "Aptos", "Segoe UI", sans-serif;
+}
+
+.project-schedule-cell b {
+  flex: 0 0 auto;
+  color: #72889d;
+  font: 900 9px/1 "Aptos", "Segoe UI", sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.project-schedule-cell.is-open {
+  background: linear-gradient(180deg, rgba(244, 249, 255, .9), rgba(255, 255, 255, .95));
+}
+
 .project-lane {
   min-height: var(--row-h);
   background:
@@ -2089,10 +2117,9 @@ button:not(.ghost-btn) {
 
 /* Natural resize + cleaner timeline iteration */
 .project-gantt {
-  --task-col: 286px;
-  --owner-col: 128px;
-  --start-col: 84px;
-  --finish-col: 84px;
+  --task-col: 312px;
+  --owner-col: 142px;
+  --schedule-col: 128px;
 }
 
 .gantt-grid-row {
@@ -2105,7 +2132,7 @@ button:not(.ghost-btn) {
 
 .project-table-head,
 .project-table-row {
-  grid-template-columns: var(--task-col) var(--owner-col) var(--start-col) var(--finish-col) !important;
+  grid-template-columns: var(--task-col) var(--owner-col) var(--schedule-col) !important;
 }
 
 .project-summary-line {
@@ -2525,7 +2552,7 @@ button:not(.ghost-btn) {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  min-width: 32px;
+  min-width: 58px;
   flex: 1;
 }
 .weekly-bar-wrap {
@@ -2542,9 +2569,10 @@ button:not(.ghost-btn) {
   background: var(--clp-blue);
 }
 .weekly-label {
-  font: 800 9px/1 "Aptos", "Segoe UI", sans-serif;
+  font: 800 9px/1.2 "Aptos", "Segoe UI", sans-serif;
   color: #5a7290;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
 }
 .weekly-count {
   font: 900 10px/1 "Aptos", "Segoe UI", sans-serif;
@@ -2673,7 +2701,7 @@ button:not(.ghost-btn) {
   top: 0;
   left: 0;
   z-index: 160;
-  width: 320px;
+  width: 360px;
   pointer-events: none;
   opacity: 0;
   transform: translateY(6px) scale(.98);
@@ -2686,11 +2714,11 @@ button:not(.ghost-btn) {
 }
 
 .gantt-task-tooltip-card {
-  padding: 14px;
+  padding: 16px;
   border: 1px solid rgba(0, 84, 166, .18);
-  border-radius: 14px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, .98);
-  box-shadow: 0 18px 44px rgba(7, 43, 89, .18);
+  box-shadow: 0 22px 52px rgba(7, 43, 89, .20);
   backdrop-filter: blur(10px);
 }
 
@@ -2724,8 +2752,40 @@ button:not(.ghost-btn) {
 .gantt-task-tooltip-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
   margin-top: 12px;
+}
+
+.gantt-task-tooltip-field {
+  min-height: 76px;
+  padding: 12px;
+  border: 1px solid rgba(0, 84, 166, .10);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fbff, #f3f8fd);
+}
+
+.gantt-task-tooltip-dates {
+  display: grid;
+  gap: 8px;
+}
+
+.gantt-task-tooltip-dates div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gantt-task-tooltip-dates span {
+  color: #7390ac;
+  font: 850 10px/1 "Aptos", "Segoe UI", sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.gantt-task-tooltip-dates strong {
+  color: #163b61;
+  font: 900 12px/1.2 "Aptos", "Segoe UI", sans-serif;
 }
 
 .gantt-task-tooltip-grid label,
@@ -2749,6 +2809,11 @@ button:not(.ghost-btn) {
   word-break: break-word;
 }
 
+.gantt-task-tooltip-block label span {
+  color: #2a5d8f;
+  font-weight: 950;
+}
+
 .gantt-task-tooltip-block {
   margin-top: 12px;
   padding-top: 12px;
@@ -2757,13 +2822,41 @@ button:not(.ghost-btn) {
 
 .gantt-task-tooltip-block ul {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
   color: #173b60;
   font: 750 12px/1.45 "Aptos", "Segoe UI", sans-serif;
 }
 
-.gantt-task-tooltip-block li + li {
-  margin-top: 4px;
+.gantt-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gantt-checklist-item::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  margin-top: 2px;
+  border: 1px solid #94b3d3;
+  border-radius: 4px;
+  background: #fff;
+  flex: 0 0 12px;
+}
+
+.gantt-checklist-item.done::before {
+  background: #0f6bbf;
+  border-color: #0f6bbf;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.88);
+}
+
+.gantt-checklist-item.done span {
+  color: #8298ad;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
 }
 
 /* Hide old week-tick styles (no longer used) */
@@ -2772,29 +2865,61 @@ button:not(.ghost-btn) {
 
 /* Subgroup styles */
 .gantt-subgroup {
-  border-top: 1px solid var(--grid-line-soft);
+  margin-top: 6px;
+  border: 1px solid rgba(0, 84, 166, .10);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(11, 59, 112, .06);
 }
 .gantt-subgroup > summary.subgroup-row {
   display: grid !important;
   grid-template-columns: var(--left) var(--timeline-width);
   width: calc(var(--left) + var(--timeline-width));
-  min-height: 30px;
+  min-height: 38px;
   cursor: pointer;
   list-style: none;
+  border-bottom: 1px solid rgba(0, 84, 166, .10);
 }
 .gantt-subgroup > summary.subgroup-row::-webkit-details-marker { display: none; }
 .project-subgroup-left {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 0 10px 0 28px;
-  background: #f5f8fc;
+  gap: 8px;
+  padding: 0 12px 0 22px;
+  background: linear-gradient(180deg, #edf5ff, #e5f0fb);
   border-right: 2px solid var(--grid-line);
-  min-height: 30px;
+  min-height: 38px;
+}
+.project-subgroup-type {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #0b5ea8;
+  color: #fff;
+  font: 950 9px/1 "Aptos", "Segoe UI", sans-serif;
+  letter-spacing: .09em;
+  text-transform: uppercase;
 }
 .project-subgroup-lane {
-  min-height: 30px;
-  background: linear-gradient(90deg, rgba(0,75,155,.06) 1px, transparent 1px) 0 0 / var(--week-width, 80px) 100%, #f9fbfd;
+  min-height: 38px;
+  background: linear-gradient(90deg, rgba(0,75,155,.08) 1px, transparent 1px) 0 0 / var(--week-width, 80px) 100%, linear-gradient(180deg, #f4f9fe, #eef5fc);
+}
+.gantt-subgroup .subgroup-label {
+  color: #0e355b;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.gantt-subgroup .subgroup-count {
+  margin-left: auto;
+  background: #ffffff;
+  border: 1px solid rgba(0, 84, 166, .14);
+  color: #0b5ea8;
+}
+
+.gantt-subgroup > .project-task-list {
+  border-top: 1px solid rgba(255,255,255,.75);
+  background: linear-gradient(180deg, rgba(250, 252, 255, .96), #ffffff 16px);
 }
 .project-twisty.small {
   width: 14px;
@@ -2844,4 +2969,479 @@ button:not(.ghost-btn) {
 .filter-section-title {
   flex: 1;
   min-width: 0;
+}
+
+/* Final enterprise UI unification */
+:root {
+  --ui-text-1: #14324f;
+  --ui-text-2: #58708a;
+  --ui-text-3: #7f93a7;
+  --ui-surface: #ffffff;
+  --ui-surface-soft: #f6faff;
+  --ui-surface-muted: #eef4fb;
+  --ui-border: #d4dfeb;
+  --ui-border-strong: #b8cade;
+  --ui-shadow-panel: 0 16px 36px rgba(9, 42, 79, .08);
+  --ui-shadow-soft: 0 8px 22px rgba(9, 42, 79, .06);
+  --ui-radius-panel: 20px;
+  --ui-radius-card: 18px;
+  --ui-radius-control: 12px;
+}
+
+body {
+  color: var(--ui-text-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.shell {
+  padding-bottom: 52px;
+}
+
+.hero {
+  padding: clamp(24px, 3vw, 34px);
+  border-radius: 30px;
+  border-color: #0f61b9;
+  background:
+    radial-gradient(circle at 86% 16%, rgba(255,255,255,.18), transparent 20rem),
+    linear-gradient(135deg, #073b78 0%, #0b58ab 58%, #0c67bf 100%);
+  box-shadow: 0 26px 54px rgba(3, 45, 95, .18);
+}
+
+.hero h1 {
+  letter-spacing: -.05em;
+}
+
+.hero-copy {
+  color: rgba(255,255,255,.84);
+  font-size: 15px;
+  line-height: 1.68;
+}
+
+.hero-badges {
+  gap: 12px;
+}
+
+.hero-badges span {
+  padding: 7px 12px;
+  border-color: rgba(255,255,255,.20);
+  background: rgba(255,255,255,.11);
+}
+
+.upload-card {
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.30);
+  background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 16px 30px rgba(3, 45, 95, .12);
+}
+
+.upload-card strong {
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.notice,
+.filter-panel,
+.panel,
+.analytics-card,
+.insight-card,
+.stat,
+.kanban-column {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: var(--ui-shadow-panel);
+}
+
+.notice {
+  margin: 12px 0 16px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fbfdff, #f3f8fe);
+  color: var(--ui-text-2);
+}
+
+.workspace-layout {
+  gap: 18px;
+}
+
+.filter-panel {
+  padding: 16px;
+}
+
+.filter-title {
+  margin-bottom: 12px;
+}
+
+.filter-title span {
+  color: var(--ui-text-3);
+  font-size: 10px;
+  letter-spacing: .18em;
+}
+
+.filter-title strong {
+  font-size: 20px;
+  letter-spacing: -.045em;
+  color: var(--clp-blue-ink);
+}
+
+.filter-title-actions {
+  gap: 8px;
+}
+
+.filter-section {
+  margin-bottom: 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f7fbff, #f3f8fd);
+}
+
+.filter-section summary {
+  min-height: 44px;
+  padding: 12px 14px;
+  color: var(--ui-text-1);
+  font-weight: 900;
+}
+
+.section-body {
+  padding: 0 12px 14px;
+}
+
+.control label {
+  color: var(--ui-text-3);
+  font-size: 10px;
+  letter-spacing: .14em;
+}
+
+.control input,
+.control select {
+  min-height: 40px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.78), 0 2px 6px rgba(15, 44, 84, .03);
+  color: var(--ui-text-1);
+  padding: 8px 11px;
+}
+
+.control input:focus,
+.control select:focus {
+  border-color: #7aa9d7;
+  box-shadow: 0 0 0 4px rgba(0, 75, 155, .08), 0 12px 20px rgba(0, 75, 155, .07);
+}
+
+.option-list {
+  gap: 7px;
+  max-height: 238px;
+}
+
+.option-pill {
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(20, 50, 79, .10);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--ui-text-1);
+  font: 800 12px/1.35 "Aptos", "Segoe UI", sans-serif;
+}
+
+.option-pill:hover {
+  border-color: var(--ui-border-strong);
+  background: #fbfdff;
+  transform: translateY(-1px);
+}
+
+.stats {
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat {
+  padding: 16px 18px;
+}
+
+.stat span {
+  color: var(--ui-text-3);
+  font-size: 10px;
+  letter-spacing: .14em;
+}
+
+.stat strong {
+  margin-top: 9px;
+  color: var(--clp-blue-ink);
+  font-size: 32px;
+}
+
+.stat em {
+  margin-top: 8px;
+  color: var(--ui-text-2);
+  font-size: 11px;
+}
+
+.tab-nav {
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 14px;
+  padding: 5px;
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fbff, #f1f7fd);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+button,
+.tab-btn,
+.ghost-btn,
+.export-btn,
+.filter-collapse-btn,
+.lang-btn {
+  font-weight: 900;
+  letter-spacing: .01em;
+}
+
+.tab-btn,
+.ghost-btn,
+.filter-collapse-btn,
+.lang-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: 12px;
+}
+
+.tab-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ui-text-2);
+}
+
+.tab-btn:hover {
+  background: #ffffff;
+  color: var(--clp-blue-deep);
+  box-shadow: var(--ui-shadow-soft);
+  transform: translateY(-1px);
+}
+
+.tab-btn.active {
+  background: linear-gradient(180deg, var(--clp-blue-deep), #0b4f99);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(0, 59, 121, .18);
+}
+
+.ghost-btn {
+  border: 1px solid var(--ui-border);
+  background: #ffffff;
+  color: var(--clp-blue-deep);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.ghost-btn:hover,
+.filter-collapse-btn:hover {
+  background: #f5faff;
+  border-color: var(--ui-border-strong);
+  color: var(--clp-blue-deep);
+  box-shadow: 0 10px 20px rgba(0, 59, 121, .10);
+}
+
+button:not(.ghost-btn):not(.tab-btn) {
+  background: linear-gradient(180deg, var(--clp-blue-deep), #0b4f99);
+  box-shadow: 0 10px 22px rgba(0, 59, 121, .18);
+}
+
+button:not(.ghost-btn):not(.tab-btn):hover {
+  background: linear-gradient(180deg, #0b4f99, #1564bb);
+  box-shadow: 0 14px 24px rgba(0, 59, 121, .20);
+}
+
+.lang-btn {
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+}
+
+.filter-collapse-btn {
+  min-width: 78px;
+}
+
+.panel {
+  padding: 18px;
+  border-radius: 22px;
+}
+
+#tab-gantt.panel {
+  padding: 14px;
+}
+
+.chart-header {
+  gap: 22px;
+  padding: 4px 6px 12px;
+}
+
+.chart-header h2 {
+  font-size: 20px;
+  letter-spacing: -.03em;
+}
+
+.chart-header p {
+  color: var(--ui-text-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.view-actions {
+  gap: 8px;
+}
+
+.chart-note {
+  margin: 0 6px 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: var(--ui-surface-soft);
+  color: var(--ui-text-2);
+  font-size: 11px;
+}
+
+.analytics-grid,
+.pmo-grid {
+  gap: 16px;
+}
+
+.analytics-card,
+.insight-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #fafdff);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.analytics-card h3,
+.insight-card h3 {
+  margin-bottom: 14px;
+  color: var(--ui-text-1);
+  font-size: 16px;
+  letter-spacing: -.025em;
+}
+
+.score-copy h4 {
+  color: var(--ui-text-1);
+  font-size: 24px;
+}
+
+.score-copy p,
+.risk-item p,
+.rank-label span,
+.h-bar-value,
+.table-count {
+  color: var(--ui-text-2);
+}
+
+.metric {
+  padding: 14px;
+  border: 1px solid rgba(20, 50, 79, .08);
+  border-radius: 15px;
+  background: linear-gradient(180deg, #fbfdff, #f2f7fc);
+}
+
+.metric span {
+  color: var(--ui-text-3);
+  letter-spacing: .08em;
+}
+
+.rank-row {
+  gap: 8px;
+}
+
+.rank-label strong,
+.risk-item strong,
+.h-bar-label {
+  color: var(--ui-text-1);
+}
+
+.rank-bar {
+  height: 10px;
+  background: #edf3f9;
+}
+
+.risk-item {
+  padding: 14px;
+  border-color: var(--ui-border);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.table-tools {
+  margin-bottom: 14px;
+}
+
+.table-count {
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.table-wrap {
+  border: 1px solid var(--ui-border);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: var(--ui-shadow-panel);
+}
+
+table {
+  background: #ffffff;
+  font: 700 13px/1.55 "Aptos", "Segoe UI", sans-serif;
+}
+
+tbody tr:nth-child(even) {
+  background: #fbfdff;
+}
+
+tbody tr:hover {
+  background: #eff6ff;
+}
+
+th,
+td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+th {
+  background: linear-gradient(180deg, #f8fbff, #edf4fb);
+  color: var(--ui-text-2);
+  font-size: 11px;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  border-bottom-color: var(--ui-border-strong);
+}
+
+td:first-child {
+  color: var(--ui-text-1);
+}
+
+.status-chip,
+.due-chip,
+.risk-type,
+.mini-badge,
+.project-group-count,
+.subgroup-count {
+  border-radius: 999px;
+}
+
+@media (max-width: 960px) {
+  .tab-nav {
+    width: 100%;
+  }
+
+  .tab-btn {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
