@@ -3068,7 +3068,7 @@ button:not(.ghost-btn) {
   margin-top: 6px;
   border: 1px solid rgba(0, 84, 166, .10);
   border-radius: 14px;
-  overflow: hidden;
+  overflow: visible;
   background: #ffffff;
   box-shadow: 0 10px 22px rgba(11, 59, 112, .06);
 }
