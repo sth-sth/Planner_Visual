@@ -6,7 +6,7 @@ const state = {
   filtered: [],
   ganttTaskLookup: new Map(),
   context: { buckets: new Map(), users: new Map(), goals: new Map(), planName: "" },
-  ganttCols: { task: 312, owner: 142, schedule: 196 },
+  ganttCols: { task: 312, owner: 142, schedule: 208 },
   filtersCollapsed: false,
   lang: "zh"
 };
@@ -1139,8 +1139,8 @@ function bindGanttColumnResizers() {
       const col = handle.dataset.col;
       const startX = event.clientX;
       const startWidth = state.ganttCols[col];
-      const min = { task: 220, owner: 104, schedule: 136 }[col] || 72;
-      const max = { task: 680, owner: 280, schedule: 240 }[col] || 260;
+      const min = { task: 220, owner: 104, schedule: 168 }[col] || 72;
+      const max = { task: 680, owner: 280, schedule: 260 }[col] || 260;
       document.body.classList.add("resizing-gantt-col");
       handle.setPointerCapture?.(event.pointerId);
       const onMove = moveEvent => {
