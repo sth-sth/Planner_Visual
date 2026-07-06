@@ -895,7 +895,7 @@ function renderGantt(options = {}) {
         return `
           <details class="gantt-subgroup" open style="--timeline-width:${timelineWidth}px">
             <summary class="gantt-grid-row subgroup-row" style="--timeline-width:${timelineWidth}px">
-              <div class="project-subgroup-left sticky-left">
+              <div class="project-subgroup-left">
                 <span class="project-twisty small" aria-hidden="true"></span>
                 <span class="project-subgroup-type">${escapeHtml(groupFieldCaption(subGroupField))}</span>
                 <span class="subgroup-label">${escapeHtml(subName)}</span>
@@ -914,7 +914,7 @@ function renderGantt(options = {}) {
     return `
       <details class="gantt-group project-group ${index % 2 ? "alt" : ""}" open style="--timeline-width:${timelineWidth}px;--week-width:${weekWidth}px">
         <summary class="gantt-grid-row group-row" style="--timeline-width:${timelineWidth}px">
-          <div class="project-group-left sticky-left">
+          <div class="project-group-left">
             <div class="project-group-title-cell">
               <span class="project-twisty" aria-hidden="true"></span>
               <span class="project-section-label">SECTION</span>
@@ -942,7 +942,7 @@ function renderGantt(options = {}) {
       ${summaryHtml}
       <div class="gantt-scroll project-scroll">
         <div class="gantt-header project-header gantt-grid-row" style="--timeline-width:${timelineWidth}px">
-          <div class="project-table-head sticky-left">
+          <div class="project-table-head">
             <div class="head-cell">Task Name<span class="col-resizer" data-col="task" title="Resize"></span></div>
             <div class="head-cell">Owner<span class="col-resizer" data-col="owner" title="Resize"></span></div>
             <div class="head-cell">${state.lang === "zh" ? "起止日期" : "Schedule"}<span class="col-resizer" data-col="schedule" title="Resize"></span></div>
@@ -1000,7 +1000,7 @@ function renderGanttRow(task, timelineStart, totalDays, pxPerDay, timelineWidth,
 
   return `
     <div class="gantt-grid-row project-task-row ${hasBar ? "" : "no-bar"}" data-task-key="${escapeAttr(task.renderKey)}" style="--timeline-width:${timelineWidth}px">
-      <div class="project-table-row sticky-left">
+      <div class="project-table-row">
         <div class="project-task-name"><span class="row-index">${rowNumber}</span><span>${escapeHtml(task.task)}</span></div>
         <div class="project-owner">${escapeHtml(assigneeText)}</div>
         ${buildScheduleCellHtml(task)}
