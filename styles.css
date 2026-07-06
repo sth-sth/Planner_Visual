@@ -2046,6 +2046,7 @@ button:not(.ghost-btn) {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
   gap: 3px;
   padding: 6px 12px;
   overflow: hidden;
