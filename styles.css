@@ -1904,13 +1904,13 @@ button:not(.ghost-btn) {
 
 .project-group-title-cell {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr);
   grid-template-areas:
     "twisty badge"
     "twisty name";
-  column-gap: 8px;
+  column-gap: 6px;
   row-gap: 2px;
-  padding: 0 16px;
+  padding: 0 8px;
   border-right: 1px solid rgba(0, 75, 155, .14);
 }
 
@@ -1933,15 +1933,15 @@ button:not(.ghost-btn) {
 }
 
 .project-group-owner-cell {
-  justify-content: center;
-  padding: 0 12px;
+  justify-content: flex-start;
+  padding: 0 8px;
   border-right: 1px solid rgba(0, 75, 155, .14);
   background: rgba(255, 255, 255, .16);
 }
 
 .project-group-schedule-cell {
-  justify-content: flex-end;
-  padding: 0 14px;
+  justify-content: flex-start;
+  padding: 0 12px;
   background: rgba(255, 255, 255, .20);
 }
 
@@ -2047,16 +2047,17 @@ button:not(.ghost-btn) {
 .project-schedule-cell {
   display: grid;
   align-content: center;
-  gap: 4px;
+  gap: 0;
   padding: 6px 10px 6px 12px;
 }
 
 .project-schedule-item {
-  display: grid;
-  gap: 2px;
-  justify-items: start;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: #244766;
   font: 800 11px/1.15 "Aptos", "Segoe UI", sans-serif;
+  white-space: nowrap;
 }
 
 .project-schedule-item strong {
@@ -2064,8 +2065,15 @@ button:not(.ghost-btn) {
   font: 900 11px/1.15 "Aptos", "Segoe UI", sans-serif;
 }
 
+.project-schedule-item + .project-schedule-item {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(23, 59, 96, .14);
+}
+
 .project-schedule-cell b {
   flex: 0 0 auto;
+  min-width: 38px;
   color: #72889d;
   font: 900 9px/1 "Aptos", "Segoe UI", sans-serif;
   letter-spacing: .08em;

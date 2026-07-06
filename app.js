@@ -1693,11 +1693,11 @@ function buildScheduleCellHtml(task) {
   return `
     <div class="project-schedule-cell ${task.viewDueDate ? "" : "is-open"}">
       <div class="project-schedule-item">
-        <b>${state.lang === "zh" ? "開始" : "Start"}</b>
+        <b>${state.lang === "zh" ? "開始：" : "Start:"}</b>
         <strong>${escapeHtml(startText)}</strong>
       </div>
       <div class="project-schedule-item ${task.viewDueDate ? "" : "is-open"}">
-        <b>${state.lang === "zh" ? "截止" : "Due"}</b>
+        <b>${state.lang === "zh" ? "截止：" : "Due:"}</b>
         <strong class="${task.viewDueDate ? "" : "muted-cell"}">${escapeHtml(dueText)}</strong>
       </div>
     </div>
