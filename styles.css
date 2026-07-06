@@ -2573,8 +2573,8 @@ button:not(.ghost-btn) {
 .project-subgroup-left,
 .project-table-head,
 .sticky-left {
-  position: relative !important;
-  left: auto !important;
+  position: sticky !important;
+  left: 0 !important;
 }
 
 .focus-gantt .project-gantt {
