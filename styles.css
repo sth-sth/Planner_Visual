@@ -870,8 +870,8 @@ body {
 }
 
 .workspace-layout {
-  grid-template-columns: 286px minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: 12px;
   position: relative;
 }
 
@@ -895,23 +895,23 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-width: 72px;
-  padding: 8px 14px;
+  gap: 0;
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
   border: 1px solid rgba(36, 77, 126, .18);
-  border-radius: 999px;
+  border-radius: 10px;
   background: #edf5ff;
   color: var(--clp-blue-deep);
-  font: 900 12px/1 "Aptos", "Segoe UI", sans-serif;
+  font-size: 0;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.68);
-  white-space: nowrap;
   transition: background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
 .filter-collapse-btn::before {
   content: "";
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-left: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
@@ -925,11 +925,11 @@ body {
 }
 
 body.filters-collapsed .workspace-layout {
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: 52px minmax(0, 1fr);
 }
 
 body.filters-collapsed .filter-panel {
-  padding-inline: 10px;
+  padding-inline: 8px;
 }
 
 body.filters-collapsed .filter-panel > :not(.filter-title) {
@@ -951,9 +951,8 @@ body.filters-collapsed .filter-title-actions {
 }
 
 body.filters-collapsed .filter-collapse-btn {
-  min-width: 0;
-  width: 100%;
-  padding-inline: 0;
+  width: 34px;
+  min-width: 34px;
 }
 
 body.filters-collapsed .filter-collapse-btn::before {
@@ -1935,7 +1934,7 @@ button:not(.ghost-btn) {
 
 .project-group-schedule-cell {
   justify-content: flex-start;
-  padding: 0 12px;
+  padding: 0 8px;
   background: rgba(255, 255, 255, .20);
 }
 
@@ -1952,6 +1951,8 @@ button:not(.ghost-btn) {
   font-size: 11px;
   line-height: 1.25;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -2050,7 +2051,7 @@ button:not(.ghost-btn) {
   align-self: stretch;
   width: 100%;
   gap: 3px;
-  padding: 6px 12px;
+  padding: 4px 8px;
   box-sizing: border-box;
   overflow: hidden;
   white-space: normal;
@@ -2074,9 +2075,9 @@ button:not(.ghost-btn) {
 
 .project-schedule-label {
   display: inline-block;
-  flex: 0 0 52px;
-  min-width: 52px;
-  max-width: 52px;
+  flex: 0 0 44px;
+  min-width: 44px;
+  max-width: 44px;
   color: #72889d;
   font: 900 9px/1 "Aptos", "Segoe UI", sans-serif;
   letter-spacing: .08em;
@@ -2122,6 +2123,11 @@ button:not(.ghost-btn) {
 .project-task-row:hover .project-table-row,
 .project-task-row:hover .project-lane {
   background-color: var(--row-hover) !important;
+}
+
+.project-task-row.is-detail-trigger,
+.project-task-bar[data-task-key] {
+  cursor: pointer;
 }
 
 .project-task-bar {
@@ -2931,6 +2937,97 @@ button:not(.ghost-btn) {
   font: 750 12px/1.45 "Aptos", "Segoe UI", sans-serif;
 }
 
+#ganttChart {
+  position: relative;
+}
+
+.gantt-detail-sidebar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  bottom: 8px;
+  width: min(280px, 28vw);
+  z-index: 140;
+  opacity: 0;
+  transform: translateX(14px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.gantt-detail-sidebar.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.gantt-detail-sidebar-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid rgba(0, 84, 166, .16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 20px 42px rgba(7, 43, 89, .16);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.gantt-detail-sidebar-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 84, 166, .10);
+  background: linear-gradient(180deg, #f8fbff, #f1f7fd);
+}
+
+.gantt-detail-kicker {
+  color: #567695;
+  font: 900 10px/1 "Aptos", "Segoe UI", sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.gantt-detail-close-btn {
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 10px;
+  box-shadow: none;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.gantt-detail-sidebar .gantt-task-tooltip-card {
+  flex: 1 1 auto;
+  padding: 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: auto;
+}
+
+.gantt-detail-sidebar .gantt-task-tooltip-head strong {
+  font-size: 13px;
+}
+
+.gantt-detail-sidebar .gantt-task-tooltip-grid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.gantt-detail-sidebar .gantt-task-tooltip-field {
+  min-height: auto;
+  padding: 10px;
+}
+
+.gantt-detail-sidebar .gantt-task-tooltip-block {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
 .gantt-checklist-item {
   display: flex;
   align-items: flex-start;
@@ -3096,6 +3193,7 @@ body {
 }
 
 .shell {
+  width: min(1680px, calc(100% - 20px));
   padding-bottom: 52px;
 }
 
@@ -3163,11 +3261,12 @@ body {
 }
 
 .workspace-layout {
-  gap: 18px;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: 12px;
 }
 
 .filter-panel {
-  padding: 16px;
+  padding: 14px;
 }
 
 .filter-title {
@@ -3187,7 +3286,7 @@ body {
 }
 
 .filter-title-actions {
-  gap: 8px;
+  gap: 6px;
 }
 
 .filter-section {
@@ -3363,7 +3462,10 @@ button:not(.ghost-btn):not(.tab-btn):hover {
 }
 
 .filter-collapse-btn {
-  min-width: 78px;
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  font-size: 0;
 }
 
 .panel {
@@ -3372,7 +3474,13 @@ button:not(.ghost-btn):not(.tab-btn):hover {
 }
 
 #tab-gantt.panel {
-  padding: 14px;
+  padding: 10px;
+}
+
+@media (max-width: 1180px) {
+  .gantt-detail-sidebar {
+    width: min(260px, 34vw);
+  }
 }
 
 .chart-header {

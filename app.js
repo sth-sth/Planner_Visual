@@ -5,8 +5,9 @@ const state = {
   tasks: [],
   filtered: [],
   ganttTaskLookup: new Map(),
+  activeTaskKey: "",
   context: { buckets: new Map(), users: new Map(), goals: new Map(), planName: "" },
-  ganttCols: { task: 312, owner: 142, schedule: 208 },
+  ganttCols: { task: 312, owner: 142, schedule: 184 },
   filtersCollapsed: false,
   lang: "zh"
 };
@@ -786,9 +787,10 @@ function syncFilterPanelToggle() {
   if (!els.filterCollapseBtn) return;
   const collapsed = state.filtersCollapsed;
   const label = collapsed ? t("filterExpand") : t("filterCollapse");
-  els.filterCollapseBtn.textContent = label;
+  els.filterCollapseBtn.textContent = "";
   els.filterCollapseBtn.setAttribute("aria-expanded", String(!collapsed));
   els.filterCollapseBtn.setAttribute("aria-label", label);
+  els.filterCollapseBtn.setAttribute("title", label);
 }
 
 function updateStats() {
@@ -809,6 +811,7 @@ function clearVisuals() {
   state.filtered = [];
   updateStats();
   if (els.ganttChart) els.ganttChart.innerHTML = `<div class="empty">${escapeHtml(t("emptyGantt"))}</div>`;
+  closeTaskDetailSidebar();
   const priorityChart = document.getElementById("priorityChart");
   const assigneeCompletionChart = document.getElementById("assigneeCompletionChart");
   const weeklyDueChart = document.getElementById("weeklyDueChart");
@@ -831,6 +834,7 @@ function renderGantt(options = {}) {
 
   if (!tasks.length) {
     el.innerHTML = `<div class="empty">${escapeHtml(t("emptyFilter"))}</div>`;
+    closeTaskDetailSidebar();
     return;
   }
 
@@ -1139,7 +1143,7 @@ function bindGanttColumnResizers() {
       const col = handle.dataset.col;
       const startX = event.clientX;
       const startWidth = state.ganttCols[col];
-      const min = { task: 220, owner: 104, schedule: 168 }[col] || 72;
+      const min = { task: 220, owner: 104, schedule: 156 }[col] || 72;
       const max = { task: 680, owner: 280, schedule: 260 }[col] || 260;
       document.body.classList.add("resizing-gantt-col");
       handle.setPointerCapture?.(event.pointerId);
@@ -1550,88 +1554,100 @@ function formatTaskAssigneeDisplay(task) {
 }
 
 function bindTaskTooltips() {
-  const rows = els.ganttChart?.querySelectorAll(".project-task-row[data-task-key]");
-  if (!rows?.length) return;
-  const tooltip = ensureTaskTooltip();
-  const hoverDelay = 600;
-  let pendingPoint = null;
+  const rows = Array.from(els.ganttChart?.querySelectorAll(".project-task-row[data-task-key]") || []);
+  if (!rows.length) {
+    closeTaskDetailSidebar();
+    return;
+  }
 
-  const clearPendingShow = () => {
-    if (tooltip._showTimer) {
-      window.clearTimeout(tooltip._showTimer);
-      tooltip._showTimer = null;
-    }
-  };
-
-  const show = (row, point) => {
-    const task = state.ganttTaskLookup.get(row.dataset.taskKey);
-    if (!task) return;
-    tooltip.innerHTML = buildTaskTooltipHtml(task);
-    tooltip.hidden = false;
-    tooltip.classList.add("visible");
-    positionTaskTooltip(point, tooltip);
-  };
-
-  const move = (event, row) => {
-    pendingPoint = { clientX: event.clientX, clientY: event.clientY };
-    if (tooltip.hidden) return;
-    if (tooltip.dataset.taskKey !== row.dataset.taskKey) return;
-    positionTaskTooltip(pendingPoint, tooltip);
-  };
-
-  const hide = () => {
-    clearPendingShow();
-    pendingPoint = null;
-    tooltip.dataset.taskKey = "";
-    tooltip.classList.remove("visible");
-    tooltip.hidden = true;
-  };
-
-  const scheduleShow = (event, row) => {
-    clearPendingShow();
-    pendingPoint = { clientX: event.clientX, clientY: event.clientY };
-    tooltip._showTimer = window.setTimeout(() => {
-      tooltip._showTimer = null;
-      tooltip.dataset.taskKey = row.dataset.taskKey;
-      show(row, pendingPoint || { clientX: event.clientX, clientY: event.clientY });
-    }, hoverDelay);
-  };
+  bindTaskDetailSurface();
 
   rows.forEach(row => {
-    row.addEventListener("mouseenter", event => scheduleShow(event, row));
-    row.addEventListener("mousemove", event => move(event, row));
-    row.addEventListener("mouseleave", hide);
+    row.classList.add("is-detail-trigger");
+    row.addEventListener("click", () => openTaskDetailSidebar(row.dataset.taskKey));
   });
 
-  els.ganttChart.querySelector(".project-scroll")?.addEventListener("scroll", hide, { passive: true });
+  els.ganttChart.querySelectorAll(".project-task-bar[data-task-key]").forEach(bar => {
+    bar.addEventListener("click", event => {
+      event.stopPropagation();
+      openTaskDetailSidebar(bar.dataset.taskKey);
+    });
+  });
+
+  refreshTaskDetailSidebar();
 }
 
-function ensureTaskTooltip() {
-  let tooltip = document.getElementById("ganttTaskTooltip");
-  if (!tooltip) {
-    tooltip = document.createElement("div");
-    tooltip.id = "ganttTaskTooltip";
-    tooltip.className = "gantt-task-tooltip";
-    tooltip.hidden = true;
-    document.body.appendChild(tooltip);
+function bindTaskDetailSurface() {
+  if (!els.ganttChart || els.ganttChart.dataset.detailSurfaceBound === "true") return;
+
+  els.ganttChart.addEventListener("click", event => {
+    if (event.target.closest(".project-task-row[data-task-key], .project-task-bar[data-task-key], .gantt-detail-sidebar")) return;
+    closeTaskDetailSidebar();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeTaskDetailSidebar();
+  });
+
+  els.ganttChart.dataset.detailSurfaceBound = "true";
+}
+
+function ensureTaskDetailSidebar() {
+  let sidebar = els.ganttChart?.querySelector("#ganttDetailSidebar");
+  if (!sidebar && els.ganttChart) {
+    sidebar = document.createElement("aside");
+    sidebar.id = "ganttDetailSidebar";
+    sidebar.className = "gantt-detail-sidebar";
+    sidebar.hidden = true;
+    els.ganttChart.appendChild(sidebar);
   }
-  return tooltip;
+  return sidebar;
 }
 
-function positionTaskTooltip(event, tooltip) {
-  const offsetX = 16;
-  const offsetY = 16;
-  const width = tooltip.offsetWidth || 360;
-  const height = tooltip.offsetHeight || 180;
-  const maxLeft = Math.max(12, window.innerWidth - width - 12);
-  const left = clamp(event.clientX + offsetX, 12, maxLeft);
-  const preferredTop = event.clientY - height - offsetY;
-  const fallbackTop = event.clientY + offsetY;
-  const top = preferredTop >= 12
-    ? preferredTop
-    : clamp(fallbackTop, 12, Math.max(12, window.innerHeight - height - 12));
-  tooltip.style.left = `${left}px`;
-  tooltip.style.top = `${top}px`;
+function openTaskDetailSidebar(taskKey) {
+  const task = state.ganttTaskLookup.get(taskKey);
+  if (!task) return;
+
+  const sidebar = ensureTaskDetailSidebar();
+  if (!sidebar) return;
+
+  state.activeTaskKey = taskKey;
+  sidebar.innerHTML = buildTaskDetailSidebarHtml(task);
+  sidebar.hidden = false;
+  requestAnimationFrame(() => sidebar.classList.add("visible"));
+  sidebar.querySelector(".gantt-detail-close-btn")?.addEventListener("click", closeTaskDetailSidebar);
+}
+
+function closeTaskDetailSidebar() {
+  state.activeTaskKey = "";
+  const sidebar = document.getElementById("ganttDetailSidebar");
+  if (!sidebar) return;
+  sidebar.classList.remove("visible");
+  sidebar.hidden = true;
+  sidebar.innerHTML = "";
+}
+
+function refreshTaskDetailSidebar() {
+  if (!state.activeTaskKey) return;
+  if (!state.ganttTaskLookup.has(state.activeTaskKey)) {
+    closeTaskDetailSidebar();
+    return;
+  }
+  openTaskDetailSidebar(state.activeTaskKey);
+}
+
+function buildTaskDetailSidebarHtml(task) {
+  const kicker = state.lang === "zh" ? "任務詳情" : "Task details";
+  const closeLabel = state.lang === "zh" ? "關閉詳情" : "Close details";
+  return `
+    <div class="gantt-detail-sidebar-shell">
+      <div class="gantt-detail-sidebar-bar">
+        <span class="gantt-detail-kicker">${escapeHtml(kicker)}</span>
+        <button type="button" class="gantt-detail-close-btn ghost-btn" aria-label="${escapeAttr(closeLabel)}">&times;</button>
+      </div>
+      ${buildTaskTooltipHtml(task)}
+    </div>
+  `;
 }
 
 function buildTaskTooltipHtml(task) {
