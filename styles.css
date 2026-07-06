@@ -1667,8 +1667,8 @@ body.filters-collapsed .filter-collapse-btn::before {
   --grid-line-soft: #eef3f8;
   --row-hover: #f5faff;
   --left: 560px;
-  --row-h: 34px;
-  --group-h: 42px;
+  --row-h: 52px;
+  --group-h: 48px;
   --header-h: 56px;
 }
 
@@ -1772,7 +1772,7 @@ button:not(.ghost-btn) {
 }
 
 .project-table-head {
-  grid-template-columns: minmax(250px, 1fr) 142px 92px 92px;
+  grid-template-columns: var(--task-col) var(--owner-col) var(--schedule-col);
   min-height: var(--header-h);
   background: var(--clp-blue-deep);
   border-right: 2px solid var(--clp-blue);
@@ -1855,7 +1855,7 @@ button:not(.ghost-btn) {
 .project-group-left {
   display: grid;
   grid-template-columns: var(--task-col) var(--owner-col) var(--schedule-col);
-  align-items: stretch;
+  align-items: center;
   height: var(--group-h);
   background: #d9ecff;
   border-right: 2px solid var(--clp-blue-line);
@@ -1903,29 +1903,23 @@ button:not(.ghost-btn) {
 }
 
 .project-group-title-cell {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  grid-template-areas:
-    "twisty badge"
-    "twisty name";
-  column-gap: 6px;
-  row-gap: 2px;
-  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
   border-right: 1px solid rgba(0, 75, 155, .14);
 }
 
 .project-group-title-cell .project-twisty {
-  grid-area: twisty;
-  align-self: center;
+  flex: 0 0 auto;
 }
 
 .project-group-title-cell .project-section-label {
-  grid-area: badge;
-  justify-self: start;
+  flex: 0 0 auto;
 }
 
 .project-group-title-cell .project-group-name {
-  grid-area: name;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2017,7 +2011,7 @@ button:not(.ghost-btn) {
 }
 
 .project-table-row {
-  grid-template-columns: minmax(250px, 1fr) 142px 92px 92px;
+  grid-template-columns: var(--task-col) var(--owner-col) var(--schedule-col);
   min-height: var(--row-h);
   background: #fff;
   border-right: 2px solid var(--grid-line);
@@ -2046,34 +2040,42 @@ button:not(.ghost-btn) {
 
 .project-schedule-cell {
   display: grid;
-  align-content: center;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  align-content: stretch;
   gap: 0;
-  padding: 6px 10px 6px 12px;
+  padding: 4px 0;
 }
 
 .project-schedule-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  min-height: 0;
+  padding: 0 10px 0 12px;
   color: #244766;
   font: 800 11px/1.15 "Aptos", "Segoe UI", sans-serif;
   white-space: nowrap;
 }
 
 .project-schedule-item strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: #173b60;
   font: 900 11px/1.15 "Aptos", "Segoe UI", sans-serif;
 }
 
 .project-schedule-item + .project-schedule-item {
-  margin-top: 4px;
-  padding-top: 4px;
+  margin-top: 0;
+  padding-top: 0;
   border-top: 1px dashed rgba(23, 59, 96, .14);
 }
 
 .project-schedule-cell b {
-  flex: 0 0 auto;
-  min-width: 38px;
+  min-width: 0;
   color: #72889d;
   font: 900 9px/1 "Aptos", "Segoe UI", sans-serif;
   letter-spacing: .08em;
@@ -2151,13 +2153,13 @@ button:not(.ghost-btn) {
 
 .compact-gantt {
   --left: 540px;
-  --row-h: 30px;
-  --group-h: 38px;
+  --row-h: 44px;
+  --group-h: 42px;
 }
 
 .compact-gantt .project-table-row,
 .compact-gantt .project-table-head {
-  grid-template-columns: minmax(240px, 1fr) 132px 84px 84px;
+  grid-template-columns: var(--task-col) var(--owner-col) var(--schedule-col);
 }
 
 .focus-gantt {
@@ -2172,7 +2174,7 @@ button:not(.ghost-btn) {
   :root { --left: 500px; }
   .project-table-row,
   .project-table-head {
-    grid-template-columns: minmax(220px, 1fr) 120px 80px 80px;
+    grid-template-columns: var(--task-col) var(--owner-col) var(--schedule-col);
   }
 }
 
@@ -2180,7 +2182,7 @@ button:not(.ghost-btn) {
   :root { --left: 420px; }
   .project-table-row,
   .project-table-head {
-    grid-template-columns: minmax(190px, 1fr) 94px 68px 68px;
+    grid-template-columns: var(--task-col) var(--owner-col) var(--schedule-col);
   }
   .project-section-label,
   .project-group-range {
