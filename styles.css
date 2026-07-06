@@ -1667,7 +1667,7 @@ body.filters-collapsed .filter-collapse-btn::before {
   --grid-line-soft: #eef3f8;
   --row-hover: #f5faff;
   --left: 560px;
-  --row-h: 52px;
+  --row-h: 58px;
   --group-h: 48px;
   --header-h: 56px;
 }
@@ -1946,8 +1946,11 @@ button:not(.ghost-btn) {
 }
 
 .project-group-range {
+  display: block;
+  width: 100%;
   color: #305677;
   font-size: 11px;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
@@ -2002,7 +2005,7 @@ button:not(.ghost-btn) {
 
 .project-task-row {
   min-height: var(--row-h);
-  border-bottom: 1px solid var(--grid-line-soft);
+  border-bottom: 1px solid #dbe7f2;
   background: #fff;
 }
 
@@ -2039,26 +2042,40 @@ button:not(.ghost-btn) {
 }
 
 .project-schedule-cell {
-  display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  align-content: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   gap: 0;
-  padding: 4px 0;
+  padding: 0;
+  overflow: hidden;
+  white-space: normal;
 }
 
-.project-schedule-item {
+.project-schedule-row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
-  min-height: 0;
+  min-height: calc(var(--row-h) / 2);
   padding: 0 10px 0 12px;
   color: #244766;
   font: 800 11px/1.15 "Aptos", "Segoe UI", sans-serif;
-  white-space: nowrap;
 }
 
-.project-schedule-item strong {
+.project-schedule-row + .project-schedule-row {
+  border-top: 1px dashed rgba(23, 59, 96, .14);
+}
+
+.project-schedule-label {
+  display: block;
+  min-width: 0;
+  color: #72889d;
+  font: 900 9px/1 "Aptos", "Segoe UI", sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.project-schedule-value {
   display: block;
   min-width: 0;
   overflow: hidden;
@@ -2068,25 +2085,11 @@ button:not(.ghost-btn) {
   font: 900 11px/1.15 "Aptos", "Segoe UI", sans-serif;
 }
 
-.project-schedule-item + .project-schedule-item {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: 1px dashed rgba(23, 59, 96, .14);
-}
-
-.project-schedule-cell b {
-  min-width: 0;
-  color: #72889d;
-  font: 900 9px/1 "Aptos", "Segoe UI", sans-serif;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
 .project-schedule-cell.is-open {
   background: linear-gradient(180deg, rgba(244, 249, 255, .9), rgba(255, 255, 255, .95));
 }
 
-.project-schedule-item.is-open strong {
+.project-schedule-row.is-open .project-schedule-value {
   color: #7a8ea2;
 }
 
@@ -2153,7 +2156,7 @@ button:not(.ghost-btn) {
 
 .compact-gantt {
   --left: 540px;
-  --row-h: 44px;
+  --row-h: 50px;
   --group-h: 42px;
 }
 

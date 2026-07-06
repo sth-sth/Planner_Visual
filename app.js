@@ -6,7 +6,7 @@ const state = {
   filtered: [],
   ganttTaskLookup: new Map(),
   context: { buckets: new Map(), users: new Map(), goals: new Map(), planName: "" },
-  ganttCols: { task: 312, owner: 142, schedule: 168 },
+  ganttCols: { task: 312, owner: 142, schedule: 196 },
   filtersCollapsed: false,
   lang: "zh"
 };
@@ -1692,13 +1692,13 @@ function buildScheduleCellHtml(task) {
   const dueText = formatDate(task.viewDueDate) || (state.lang === "zh" ? "未設置" : "No date");
   return `
     <div class="project-schedule-cell ${task.viewDueDate ? "" : "is-open"}">
-      <div class="project-schedule-item">
-        <b>${state.lang === "zh" ? "開始：" : "Start:"}</b>
-        <strong>${escapeHtml(startText)}</strong>
+      <div class="project-schedule-row">
+        <span class="project-schedule-label">${state.lang === "zh" ? "開始" : "Start"}</span>
+        <span class="project-schedule-value">${escapeHtml(startText)}</span>
       </div>
-      <div class="project-schedule-item ${task.viewDueDate ? "" : "is-open"}">
-        <b>${state.lang === "zh" ? "截止：" : "Due:"}</b>
-        <strong class="${task.viewDueDate ? "" : "muted-cell"}">${escapeHtml(dueText)}</strong>
+      <div class="project-schedule-row ${task.viewDueDate ? "" : "is-open"}">
+        <span class="project-schedule-label">${state.lang === "zh" ? "截止" : "Due"}</span>
+        <span class="project-schedule-value ${task.viewDueDate ? "" : "muted-cell"}">${escapeHtml(dueText)}</span>
       </div>
     </div>
   `;
