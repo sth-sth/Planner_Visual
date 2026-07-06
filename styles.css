@@ -1853,12 +1853,16 @@ button:not(.ghost-btn) {
 }
 
 .project-group-left {
+  display: grid;
+  grid-template-columns: var(--task-col) var(--owner-col) var(--schedule-col);
+  align-items: stretch;
   height: var(--group-h);
   background: #d9ecff;
   border-right: 2px solid var(--clp-blue-line);
   color: var(--clp-blue-ink);
-  padding: 0 12px;
-  gap: 9px;
+  padding: 0;
+  gap: 0;
+  box-sizing: border-box;
 }
 
 .project-group.alt .project-group-left {
@@ -1889,6 +1893,58 @@ button:not(.ghost-btn) {
   font-weight: 950;
 }
 
+.project-group-title-cell,
+.project-group-owner-cell,
+.project-group-schedule-cell {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: var(--group-h);
+}
+
+.project-group-title-cell {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-areas:
+    "twisty badge"
+    "twisty name";
+  column-gap: 8px;
+  row-gap: 2px;
+  padding: 0 16px;
+  border-right: 1px solid rgba(0, 75, 155, .14);
+}
+
+.project-group-title-cell .project-twisty {
+  grid-area: twisty;
+  align-self: center;
+}
+
+.project-group-title-cell .project-section-label {
+  grid-area: badge;
+  justify-self: start;
+}
+
+.project-group-title-cell .project-group-name {
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-group-owner-cell {
+  justify-content: center;
+  padding: 0 12px;
+  border-right: 1px solid rgba(0, 75, 155, .14);
+  background: rgba(255, 255, 255, .16);
+}
+
+.project-group-schedule-cell {
+  justify-content: flex-end;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, .20);
+}
+
 .project-group-count {
   border-color: var(--clp-blue-line);
   background: #fff;
@@ -1898,6 +1954,7 @@ button:not(.ghost-btn) {
 .project-group-range {
   color: #305677;
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .project-twisty {
@@ -1994,13 +2051,17 @@ button:not(.ghost-btn) {
   padding: 6px 10px 6px 12px;
 }
 
-.project-schedule-cell span {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+.project-schedule-item {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
   color: #244766;
   font: 800 11px/1.15 "Aptos", "Segoe UI", sans-serif;
+}
+
+.project-schedule-item strong {
+  color: #173b60;
+  font: 900 11px/1.15 "Aptos", "Segoe UI", sans-serif;
 }
 
 .project-schedule-cell b {
@@ -2013,6 +2074,10 @@ button:not(.ghost-btn) {
 
 .project-schedule-cell.is-open {
   background: linear-gradient(180deg, rgba(244, 249, 255, .9), rgba(255, 255, 255, .95));
+}
+
+.project-schedule-item.is-open strong {
+  color: #7a8ea2;
 }
 
 .project-lane {
@@ -2764,6 +2829,10 @@ button:not(.ghost-btn) {
   background: linear-gradient(180deg, #f8fbff, #f3f8fd);
 }
 
+.gantt-task-tooltip-date-field {
+  min-height: 68px;
+}
+
 .gantt-task-tooltip-dates {
   display: grid;
   gap: 8px;
@@ -2807,6 +2876,11 @@ button:not(.ghost-btn) {
   color: #173b60;
   font: 750 12px/1.45 "Aptos", "Segoe UI", sans-serif;
   word-break: break-word;
+}
+
+.gantt-task-tooltip-date-field p {
+  font-weight: 900;
+  font-size: 13px;
 }
 
 .gantt-task-tooltip-block label span {

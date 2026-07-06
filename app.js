@@ -198,7 +198,7 @@ function cacheElements() {
     "fileInput", "fileLabel", "sheetSelect", "bucketFilter", "assigneeFilter",
     "statusFilter", "startDate", "endDate", "subGroupBy", "groupBy", "resetBtn", "csvBtn",
     "notice", "totalTasks", "completionRate", "completedNote", "overdueTasks",
-    "noDueTasks", "searchInput", "ganttMeta", "bucketCount", "assigneeCount", "statusCount",
+    "noDueTasks", "searchInput", "bucketCount", "assigneeCount", "statusCount",
     "ganttChart", "healthPanel", "workloadPanel", "bucketPanel", "riskPanel",
     "expandAllBtn", "collapseAllBtn", "focusModeBtn", "densityBtn", "tableCount", "langBtn",
     "filterCollapseBtn"
@@ -451,6 +451,7 @@ function normalizePlannerRows(rows, context) {
       late: /^true|yes|是|1$/i.test(lateRaw),
       checklist: checklistMeta.summary,
       checklistItems: checklistMeta.items,
+      checklistEntries: checklistMeta.entries,
       checklistDoneItems: checklistMeta.doneItems,
       checklistDoneCount: checklistMeta.doneCount,
       checklistTotalCount: checklistMeta.totalCount,
@@ -497,8 +498,11 @@ function splitPeopleRaw(value) {
 function parseChecklistMeta(row) {
   const doneRaw = cleanText(pick(row, ["Completed Checklist Items", "Completed checklist items", "已完成检查项"]));
   const itemsRaw = cleanText(pick(row, ["Checklist Items", "Checklist items", "Checklist", "检查清单项目", "检查清单"]));
-  const items = parseChecklistItems(itemsRaw);
-  const doneItems = parseChecklistItems(doneRaw);
+  const itemEntries = parseChecklistEntries(itemsRaw);
+  const doneEntries = parseChecklistEntries(doneRaw);
+  const items = itemEntries.map(item => item.text);
+  const inferredDoneItems = itemEntries.filter(item => item.done).map(item => item.text);
+  const doneItems = doneEntries.length ? doneEntries.map(item => item.text) : inferredDoneItems;
   const doneProgress = parseChecklistProgress(doneRaw);
   const itemsProgress = parseChecklistProgress(itemsRaw);
   const doneCount = doneProgress?.done ?? parseChecklistCount(doneRaw) ?? doneItems.length;
@@ -515,6 +519,7 @@ function parseChecklistMeta(row) {
   return {
     summary: summaryParts.join(" · "),
     items,
+    entries: itemEntries,
     doneItems,
     doneCount,
     totalCount
@@ -530,15 +535,44 @@ function parseChecklistProgress(value) {
 }
 
 function parseChecklistItems(value) {
+  return parseChecklistEntries(value).map(item => item.text);
+}
+
+function parseChecklistEntries(value) {
   const text = cleanText(value);
   if (!text) return [];
   const normalized = text
     .replace(/\s*[|｜；;]\s*/g, "\n")
-    .replace(/\s*[•·▪▫]\s*/g, "\n")
-    .replace(/\s*[,，](?=\s*[A-Za-z\u4e00-\u9fff0-9])/g, "\n");
+    .replace(/\s*[•▪▫]\s*/g, "\n")
+    .replace(/\s*[,，](?=\s*[A-Za-z\u4e00-\u9fff0-9\[☐☑✓✔✗✘❌❎❏■□▢▣])/g, "\n");
   const parts = normalized.split(/\n+/).map(cleanText).filter(Boolean);
   if (parts.length === 1 && /^\d+(?:\s*\/\s*\d+)?$/.test(parts[0])) return [];
-  return distinctPreserveOrder(parts.map(item => item.replace(/^[-*]\s*/, "")).filter(Boolean));
+  return distinctPreserveOrder(parts.map(parseChecklistEntry).filter(item => item.text), item => item.text.toLowerCase());
+}
+
+function parseChecklistEntry(value) {
+  const raw = cleanText(value);
+  if (!raw) return { text: "", done: false };
+  const doneMarker = /^(?:\[x\]|\[X\]|☑|✅|✔|✓|已完成[:：]?|done[:：]?|complete[:：]?|completed[:：]?|true[:：]?|1[:：])\s*/i;
+  const openMarker = /^(?:\[\s*\]|☐|⬜|□|未完成[:：]?|todo[:：]?|false[:：]?|0[:：])\s*/i;
+  let done = false;
+  let text = raw;
+
+  if (doneMarker.test(text)) {
+    done = true;
+    text = text.replace(doneMarker, "");
+  } else if (openMarker.test(text)) {
+    text = text.replace(openMarker, "");
+  }
+
+  text = text
+    .replace(/^[-*]\s*/, "")
+    .replace(/^\d+[.)、]\s*/, "")
+    .replace(/^第\s*\d+\s*項\s*/, "")
+    .replace(/^checklist\s*item\s*[:：]?/i, "")
+    .trim();
+
+  return { text, done };
 }
 
 function parseChecklistCount(value) {
@@ -792,13 +826,10 @@ function clearVisuals() {
 function renderGantt(options = {}) {
   const tasks = state.filtered.slice();
   const scheduled = tasks.filter(t => t.viewDueDate && t.viewGanttStart && t.viewGanttEnd);
-  const noDue = tasks.filter(t => !t.viewDueDate).length;
-  const noStart = tasks.filter(t => t.viewDueDate && !t.viewGanttStart).length;
   const el = els.ganttChart;
   const viewport = options.viewport || captureGanttViewport();
 
   if (!tasks.length) {
-    if (els.ganttMeta) els.ganttMeta.textContent = t("emptyFilter");
     el.innerHTML = `<div class="empty">${escapeHtml(t("emptyFilter"))}</div>`;
     return;
   }
@@ -818,14 +849,6 @@ function renderGantt(options = {}) {
   const groupField = els.groupBy.value || "bucket";
   const subGroupField = els.subGroupBy?.value || "none";
   const renderTasks = expandTasksForGrouping(tasks, [groupField, subGroupField]).sort(compareForGantt);
-
-  if (els.ganttMeta) {
-    const hidden = [
-      noDue ? `${noDue} ${t("noDueGanttNote")}` : "",
-      noStart ? `${noStart} ${t("noStartNote")}` : ""
-    ].filter(Boolean).join("；");
-    els.ganttMeta.textContent = t("ganttMetaFull") ? t("ganttMetaFull").replace("{year}", PROJECT_YEAR).replace("{total}", tasks.length).replace("{scheduled}", scheduled.length).replace("{hidden}", hidden ? (state.lang === "zh" ? `；${hidden}` : `; ${hidden}`) : "") : "";
-  }
 
   const dayTicks = buildDayTicks(timelineStart, timelineEnd, pxPerDay);
   const months = buildMonthBands(timelineStart, timelineEnd, pxPerDay);
@@ -888,11 +911,17 @@ function renderGantt(options = {}) {
       <details class="gantt-group project-group ${index % 2 ? "alt" : ""}" open style="--timeline-width:${timelineWidth}px;--week-width:${weekWidth}px">
         <summary class="gantt-grid-row group-row" style="--timeline-width:${timelineWidth}px">
           <div class="project-group-left sticky-left">
-            <span class="project-twisty" aria-hidden="true"></span>
-            <span class="project-section-label">SECTION</span>
-            <span class="project-group-name">${escapeHtml(groupField === "none" ? t("allTasks") : groupName)}</span>
-            <span class="project-group-count">${groupRows.length}</span>
-            <span class="project-group-range">${escapeHtml(groupRange)}</span>
+            <div class="project-group-title-cell">
+              <span class="project-twisty" aria-hidden="true"></span>
+              <span class="project-section-label">SECTION</span>
+              <span class="project-group-name">${escapeHtml(groupField === "none" ? t("allTasks") : groupName)}</span>
+            </div>
+            <div class="project-group-owner-cell">
+              <span class="project-group-count">${groupRows.length}</span>
+            </div>
+            <div class="project-group-schedule-cell">
+              <span class="project-group-range">${escapeHtml(groupRange)}</span>
+            </div>
           </div>
           <div class="project-group-lane" style="width:${timelineWidth}px;--week-width:${weekWidth}px">
             ${groupBar}
@@ -1607,8 +1636,6 @@ function positionTaskTooltip(event, tooltip) {
 
 function buildTaskTooltipHtml(task) {
   const assignees = getTaskAssignees(task);
-  const activeAssignee = cleanText(task.groupValues?.assignedTo);
-  const sharedWith = activeAssignee ? assignees.filter(name => name !== activeAssignee) : [];
   const startText = formatDate(task.viewStartDate) || (state.lang === "zh" ? "未設置" : "N/A");
   const dueText = formatDate(task.viewDueDate) || (state.lang === "zh" ? "未設置" : "N/A");
   const duration = task.viewGanttStart && task.viewGanttEnd
@@ -1618,10 +1645,7 @@ function buildTaskTooltipHtml(task) {
     ? `${Math.min(task.checklistDoneCount, task.checklistTotalCount)}/${task.checklistTotalCount}`
     : task.checklist;
   const checklistItems = buildChecklistDisplayItems(task);
-  const leadAssignee = activeAssignee || assignees[0] || t("unassigned");
-  const assigneeDetail = sharedWith.length
-    ? `${leadAssignee} · ${state.lang === "zh" ? `協作 ${sharedWith.join("; ")}` : `Shared with ${sharedWith.join("; ")}`}`
-    : (assignees.join("; ") || t("unassigned"));
+  const assigneeDetail = assignees.join("; ") || t("unassigned");
 
   return `
     <div class="gantt-task-tooltip-card">
@@ -1639,19 +1663,20 @@ function buildTaskTooltipHtml(task) {
           <label>${state.lang === "zh" ? "負責人" : "Owner"}</label>
           <p>${escapeHtml(assigneeDetail)}</p>
         </div>
-        <div class="gantt-task-tooltip-field gantt-task-tooltip-schedule">
-          <label>${state.lang === "zh" ? "起止日期" : "Schedule"}</label>
-          <div class="gantt-task-tooltip-dates">
-            <div><span>${state.lang === "zh" ? "開始" : "Start"}</span><strong>${escapeHtml(startText)}</strong></div>
-            <div><span>${state.lang === "zh" ? "截止" : "Due"}</span><strong>${escapeHtml(dueText)}</strong></div>
-          </div>
-        </div>
         <div class="gantt-task-tooltip-field">
           <label>${state.lang === "zh" ? "建立者" : "Created by"}</label>
           <p>${escapeHtml(task.createdBy || "-")}</p>
         </div>
-        ${task.labels ? `<div class="gantt-task-tooltip-field"><label>${state.lang === "zh" ? "標籤" : "Labels"}</label><p>${escapeHtml(task.labels)}</p></div>` : ""}
+        <div class="gantt-task-tooltip-field gantt-task-tooltip-date-field">
+          <label>${state.lang === "zh" ? "開始" : "Start"}</label>
+          <p>${escapeHtml(startText)}</p>
+        </div>
+        <div class="gantt-task-tooltip-field gantt-task-tooltip-date-field">
+          <label>${state.lang === "zh" ? "截止" : "Due"}</label>
+          <p>${escapeHtml(dueText)}</p>
+        </div>
       </div>
+      ${task.labels ? `<div class="gantt-task-tooltip-block"><label>${state.lang === "zh" ? "標籤" : "Labels"}</label><p>${escapeHtml(task.labels)}</p></div>` : ""}
       ${task.description ? `<div class="gantt-task-tooltip-block"><label>${state.lang === "zh" ? "備註" : "Notes"}</label><p>${escapeHtml(task.description)}</p></div>` : ""}
       ${checklistProgress || checklistItems.length ? `
         <div class="gantt-task-tooltip-block">
@@ -1667,26 +1692,40 @@ function buildScheduleCellHtml(task) {
   const dueText = formatDate(task.viewDueDate) || (state.lang === "zh" ? "未設置" : "No date");
   return `
     <div class="project-schedule-cell ${task.viewDueDate ? "" : "is-open"}">
-      <span><b>${state.lang === "zh" ? "開始" : "Start"}</b>${escapeHtml(startText)}</span>
-      <span class="${task.viewDueDate ? "" : "muted-cell"}"><b>${state.lang === "zh" ? "截止" : "Due"}</b>${escapeHtml(dueText)}</span>
+      <div class="project-schedule-item">
+        <b>${state.lang === "zh" ? "開始" : "Start"}</b>
+        <strong>${escapeHtml(startText)}</strong>
+      </div>
+      <div class="project-schedule-item ${task.viewDueDate ? "" : "is-open"}">
+        <b>${state.lang === "zh" ? "截止" : "Due"}</b>
+        <strong class="${task.viewDueDate ? "" : "muted-cell"}">${escapeHtml(dueText)}</strong>
+      </div>
     </div>
   `;
 }
 
 function buildChecklistDisplayItems(task) {
-  const items = Array.isArray(task.checklistItems) ? task.checklistItems : [];
+  const entries = Array.isArray(task.checklistEntries) ? task.checklistEntries : [];
+  const items = entries.length ? entries.map(item => item.text) : (Array.isArray(task.checklistItems) ? task.checklistItems : []);
   if (!items.length) return [];
   const doneItems = Array.isArray(task.checklistDoneItems) ? task.checklistDoneItems : [];
   const doneSet = new Set(doneItems.map(normalizeChecklistItemKey));
   const markAllDone = !doneSet.size && task.checklistTotalCount && task.checklistDoneCount >= task.checklistTotalCount;
-  return items.map(item => ({
+  return items.map((item, index) => ({
     text: item,
-    done: markAllDone || doneSet.has(normalizeChecklistItemKey(item))
+    done: markAllDone || Boolean(entries[index]?.done) || doneSet.has(normalizeChecklistItemKey(item))
   }));
 }
 
 function normalizeChecklistItemKey(value) {
-  return cleanText(value).toLowerCase().replace(/^[-*]\s*/, "");
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/^(?:\[x\]|\[\s*\]|☑|✅|✔|✓|☐|⬜|□)\s*/i, "")
+    .replace(/^[-*]\s*/, "")
+    .replace(/^\d+[.)、]\s*/, "")
+    .replace(/^第\s*\d+\s*項\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function countBy(items, getKey) {
@@ -1697,11 +1736,11 @@ function topEntries(counts, limit) {
   return Object.entries(counts).map(([key, value]) => ({ key, value })).sort((a, b) => b.value - a.value || a.key.localeCompare(b.key, "zh-CN")).slice(0, limit);
 }
 
-function distinctPreserveOrder(values) {
+function distinctPreserveOrder(values, keySelector = value => String(value)) {
   const seen = new Set();
   const results = [];
   values.filter(Boolean).forEach(value => {
-    const key = String(value);
+    const key = keySelector(value);
     if (seen.has(key)) return;
     seen.add(key);
     results.push(value);
